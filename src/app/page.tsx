@@ -42,7 +42,7 @@ export default function HomePage() {
   return (
     <>
       {/* HP-1: Hero Section */}
-      <section className="hero">
+      <section className="hero relative z-20">
         <div className="hero-bg">
           <Image src="/hero.png" alt="Sydney Chauffeur Transfer" fill priority sizes="100vw" quality={90} />
         </div>
@@ -61,7 +61,7 @@ export default function HomePage() {
       </section>
 
       {/* HP-2: Quick Action Cards */}
-      <section className="section bg-[var(--ink-900)]">
+      <section className="section relative z-10 bg-[var(--ink-900)]">
         <div className="container">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {QUICK_ACTIONS.map((qa) => {
