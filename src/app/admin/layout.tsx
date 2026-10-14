@@ -59,20 +59,31 @@ const ADMIN_NAV = [
 ];
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, adminUser, logout } = useAdminAuth();
+  const { isAuthenticated, adminUser, loading, logout } = useAdminAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // If not authenticated and not on login page, redirect to login
-    if (!isAuthenticated && pathname !== "/admin/login") {
+    // If not authenticated, not currently loading, and not on login page, redirect to login
+    if (!loading && !isAuthenticated && pathname !== "/admin/login") {
       router.push("/admin/login");
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, loading, pathname, router]);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#06080d] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+          <span className="text-xs text-white/50 tracking-wider uppercase font-medium">Checking authorization...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -141,12 +152,17 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Sidebar Footer with Dispatcher Info and Quick Link */}
         <div className="p-4 border-t border-white/10 space-y-3">
           <div className="flex items-center gap-3 px-2 py-1">
-            <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-gold text-xs font-bold">
-              OP
+            <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-gold text-xs font-bold uppercase">
+              {adminUser?.name ? adminUser.name.slice(0, 2).toUpperCase() : "AD"}
             </div>
             <div className="overflow-hidden">
-              <div className="text-xs font-semibold truncate text-white">{adminUser?.name || "Operations"}</div>
-              <div className="text-[10px] text-white/40 truncate">{adminUser?.email || "dispatch"}</div>
+              <div className="text-xs font-semibold truncate text-white flex items-center gap-1.5">
+                <span className="truncate">{adminUser?.name || "Administrator"}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 border border-amber-400/20 uppercase font-mono">
+                  {adminUser?.role || "Staff"}
+                </span>
+              </div>
+              <div className="text-[10px] text-white/40 truncate">{adminUser?.email || "admin@sydtransport.com.au"}</div>
             </div>
           </div>
 

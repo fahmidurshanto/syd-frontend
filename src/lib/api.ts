@@ -2,7 +2,7 @@ export const API_URL = (process.env.NEXT_PUBLIC_API_URL?.trim() || "http://local
 const BASE = `${API_URL}/api/v1`;
 
 export type Place = { id?: string; name: string; address?: string; lat: number; lng: number; type?: string; code?: string };
-export type Service = "taxi" | "chauffeur";
+export type Service = "taxi" | "airport" | "chauffeur";
 
 export type PlaceRoute = {
   _id?: string;
@@ -192,6 +192,7 @@ export class ApiError extends Error {
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetch(`${BASE}${path}`, {
+    credentials: "include",
     ...init,
     method: init.method ?? (init.json ? "POST" : "GET"),
     headers: {
@@ -203,7 +204,12 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
     cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error ?? "Something went wrong", res.status, data.fields);
+  if (!res.ok) {
+    const errorMsg = Array.isArray(data.message)
+      ? data.message.join(", ")
+      : (data.message ?? data.error ?? "Something went wrong");
+    throw new ApiError(errorMsg, res.status, data.fields);
+  }
   return data as T;
 }
 
@@ -392,3 +398,44 @@ export async function saveVehicleApi(vehicle: Partial<VehicleRecord>): Promise<b
     return false;
   }
 }
+
+// Admin Authentication Types & API
+export type AdminUser = {
+  _id: string;
+  name: string;
+  email: string;
+  role: "admin" | "manager" | string;
+  phone?: string;
+  isActive?: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function adminLoginApi(
+  email: string,
+  password: string
+): Promise<{ success: boolean; message: string; admin: AdminUser; accessToken?: string }> {
+  return api<{ success: boolean; message: string; admin: AdminUser; accessToken?: string }>(
+    "/admins/login",
+    {
+      method: "POST",
+      json: { email, password },
+    }
+  );
+}
+
+export async function adminLogoutApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    return await api<{ success: boolean; message?: string }>("/admins/logout", {
+      method: "POST",
+    });
+  } catch {
+    return { success: true };
+  }
+}
+
+export async function getAdminMeApi(): Promise<{ success: boolean; admin: AdminUser }> {
+  return api<{ success: boolean; admin: AdminUser }>("/admins/me");
+}
+
