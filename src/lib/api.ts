@@ -2,7 +2,7 @@ export const API_URL = (process.env.NEXT_PUBLIC_API_URL?.trim() || "http://local
 const BASE = `${API_URL}/api/v1`;
 
 export type Place = { id?: string; name: string; address?: string; lat: number; lng: number; type?: string; code?: string };
-export type Service = "taxi" | "airport" | "chauffeur";
+export type Service = "taxi" | "chauffeur";
 
 export type PlaceRoute = {
   _id?: string;
@@ -214,3 +214,181 @@ export const sydneyTime = (iso: string | Date) =>
   new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
 export const SERVICE_LABEL: Record<Service, string> = { taxi: "Taxi", airport: "Airport Transfer", chauffeur: "Chauffeur" };
+
+export type BookingStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" | "CANCELLED" | "CONFIRMED" | "PENDING";
+
+export type BookingRecord = {
+  _id: string;
+  bookingNumber?: string;
+  service: Service;
+  status: BookingStatus;
+  paymentStatus?: "pending" | "paid" | "failed" | "refunded";
+  passengerName?: string;
+  passengerPhone?: string;
+  passengerEmail?: string;
+  passenger?: { name?: string; phone?: string; email?: string };
+  pickup?: Place;
+  pickupLocation?: { address?: string; coordinates?: [number, number] };
+  destination?: Place;
+  dropoffLocation?: { address?: string; coordinates?: [number, number] };
+  vehicleType?: string;
+  vehicleDetails?: { name?: string; slug?: string; luggage?: number; exampleModels?: string[]; image?: string };
+  vehicle?: VehicleRecord;
+  passengers?: number;
+  flightNumber?: string;
+  airportTripType?: "pickup" | "dropoff" | null;
+  fare?: {
+    total?: number;
+    currency?: string;
+    distanceKm?: number;
+    durationMin?: number;
+    gstIncluded?: number;
+    lines?: { label: string; amount: number }[];
+  };
+  notes?: string;
+  cancellationReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type VehicleRecord = {
+  _id: string;
+  slug: string;
+  name: string;
+  group?: string;
+  description?: string;
+  basePrice: number;
+  pricePerKm: number;
+  pricePerMinute: number;
+  minimumFare: number;
+  passengersMin: number;
+  passengersMax: number;
+  luggage: number;
+  features?: string[];
+  exampleModels?: string[];
+  image?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+  supportedServices?: string[];
+};
+
+// Admin Bookings API
+export async function getAdminBookingsApi(params?: { status?: string; search?: string; limit?: number }): Promise<BookingRecord[]> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.status && params.status !== "all") qs.set("status", params.status);
+    if (params?.search) qs.set("search", params.search);
+    if (params?.limit) qs.set("limit", String(params.limit));
+
+    const endpoint = `/bookings${qs.toString() ? `?${qs.toString()}` : ""}`;
+    const res = await api<any>(endpoint);
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res.bookings)) return res.bookings;
+    if (Array.isArray(res.data)) return res.data;
+    return [];
+  } catch (err) {
+    console.error("Failed to fetch bookings:", err);
+    return [];
+  }
+}
+
+export async function updateBookingStatusApi(id: string, status: string, notes?: string): Promise<boolean> {
+  try {
+    await api(`/bookings/${id}`, {
+      method: "PATCH",
+      json: { status, ...(notes ? { notes } : {}) },
+    });
+    return true;
+  } catch {
+    try {
+      await api(`/bookings/${id}`, {
+        method: "PUT",
+        json: { status, ...(notes ? { notes } : {}) },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export async function deleteBookingApi(id: string): Promise<boolean> {
+  try {
+    await api(`/bookings/${id}`, { method: "DELETE" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Admin Places / Routes API
+export async function getAdminPlacesApi(search?: string, limit = 100): Promise<PlaceRoute[]> {
+  try {
+    const qs = new URLSearchParams();
+    if (search) qs.set("search", search);
+    qs.set("limit", String(limit));
+    const res = await api<{ places: PlaceRoute[] }>(`/places?${qs.toString()}`);
+    return res.places ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function savePlaceRouteApi(route: Partial<PlaceRoute>): Promise<boolean> {
+  try {
+    if (route._id) {
+      await api(`/places/${route._id}`, {
+        method: "PUT",
+        json: route,
+      });
+    } else {
+      await api("/places", {
+        method: "POST",
+        json: route,
+      });
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed saving place route:", err);
+    return false;
+  }
+}
+
+export async function deletePlaceRouteApi(id: string): Promise<boolean> {
+  try {
+    await api(`/places/${id}`, { method: "DELETE" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Admin Vehicles API
+export async function getAdminVehiclesApi(): Promise<VehicleRecord[]> {
+  try {
+    const res = await api<{ vehicles: VehicleRecord[] }>("/vehicles");
+    return res.vehicles ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveVehicleApi(vehicle: Partial<VehicleRecord>): Promise<boolean> {
+  try {
+    if (vehicle._id) {
+      await api(`/vehicles/${vehicle._id}`, {
+        method: "PUT",
+        json: vehicle,
+      });
+    } else {
+      await api("/vehicles", {
+        method: "POST",
+        json: vehicle,
+      });
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed saving vehicle:", err);
+    return false;
+  }
+}

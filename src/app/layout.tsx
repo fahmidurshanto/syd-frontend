@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { PublicChrome } from "@/components/PublicChrome";
 import { Effects } from "@/components/Effects";
 import { SITE } from "@/lib/site";
 
@@ -22,10 +21,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en-AU" className={`${inter.variable} ${outfit.variable}`}>
       <body>
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] btn btn-gold btn-sm">Skip to content</a>
-        <Header />
-        <main id="main">{children}</main>
-        <Footer />
+        <PublicChrome>
+          {children}
+        </PublicChrome>
         <Effects />
       </body>
     </html>

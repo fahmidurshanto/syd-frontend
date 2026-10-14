@@ -19,7 +19,7 @@ export const encodePlace = (p: Place) => encodeURIComponent(JSON.stringify({ nam
 /** HP-1: one form, service selector, form adapts to the service (F7). */
 export function HeroBookingForm() {
   const router = useRouter();
-  const [service, setService] = useState<Service>("airport");
+  const [service, setService] = useState<Service>("taxi");
   const [from, setFrom] = useState<Place | null>(null);
   const [to, setTo] = useState<Place | null>(null);
   const [now, setNow] = useState(false);
@@ -181,9 +181,9 @@ export function HeroBookingForm() {
     <form onSubmit={submit} className="glass fade-up p-5 sm:p-6" style={{ animationDelay: "250ms" }} id="hero-booking-form" noValidate>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="segmented" role="group" aria-label="Service">
-          {(["taxi", "airport", "chauffeur"] as Service[]).map((s) => (
+          {(["taxi", "chauffeur"] as Service[]).map((s) => (
             <button key={s} type="button" aria-pressed={service === s} onClick={() => { setService(s); if (s !== "taxi") setNow(false); }} id={`hero-service-${s}`}>
-              {s === "taxi" ? "Taxi" : s === "airport" ? "Airport" : "Chauffeur"}
+              {s === "taxi" ? "Taxi" : "Chauffeur"}
             </button>
           ))}
         </div>
@@ -195,7 +195,7 @@ export function HeroBookingForm() {
           <PlaceInput
             id="hero-from"
             label="From"
-            placeholder={service === "airport" ? "Airport, hotel or address" : "Pickup location"}
+            placeholder="Pickup location"
             value={from}
             onChange={handleFromChange}
             icon="pin"

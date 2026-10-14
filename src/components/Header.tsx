@@ -7,7 +7,6 @@ import { SITE } from "@/lib/site";
 
 const NAV = [
   { href: "/book/taxi", label: "Taxi" },
-  { href: "/book/airport", label: "Airport" },
   { href: "/book/chauffeur", label: "Chauffeur" },
   { href: "/#corporate", label: "Corporate" },
   { href: "/fleet", label: "Fleet" },
@@ -48,7 +47,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/login" className="btn btn-ghost btn-sm hidden sm:inline-flex" id="header-login">Log in</Link>
+          <Link href="/admin/login" className="btn btn-ghost btn-sm hidden sm:inline-flex" id="header-login">Admin Portal</Link>
           <Link href="/book/taxi" className="btn btn-gold btn-sm" id="header-book-now">Book now</Link>
           <button className="btn btn-ghost btn-sm lg:hidden" style={{ width: 38, padding: 0 }} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label="Menu" id="mobile-menu-toggle">
             {open ? <Icon.close /> : <Icon.menu />}
