@@ -15,7 +15,7 @@ export function AdminNavbar({ onOpenMobileSidebar }: AdminNavbarProps) {
 
   const getPageTitle = () => {
     if (pathname.includes("/admin/bookings")) return "Bookings & Dispatch";
-    if (pathname.includes("/admin/places")) return "Routes & Fixed Tariffs";
+    if (pathname.includes("/admin/routes") || pathname.includes("/admin/places")) return "Routes & Fixed Tariffs";
     if (pathname.includes("/admin/vehicles")) return "Fleet Vehicles & Capacities";
     return "Operations Dashboard";
   };
@@ -74,7 +74,7 @@ export function AdminNavbar({ onOpenMobileSidebar }: AdminNavbarProps) {
 
         {/* Dispatcher Profile & Logout */}
         <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-          <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-gold text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-xs font-bold">
             {adminUser?.name?.[0] || "A"}
           </div>
           <div className="hidden xl:block text-left">

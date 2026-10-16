@@ -133,7 +133,7 @@ export function PlaceInput({
   const I = Icon[icon];
   return (
     <div
-      className={`field ${open && !disabled ? "relative z-50" : "relative z-10"} ${
+      className={`relative flex flex-col gap-1.5 min-w-0 ${open && !disabled ? "relative z-50" : "relative z-10"} ${
         disabled ? "opacity-75" : ""
       }`}
       ref={wrap}
@@ -143,10 +143,10 @@ export function PlaceInput({
         }
       }}
     >
-      <label htmlFor={id} className="label flex items-center justify-between">
+      <label htmlFor={id} className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400 flex items-center justify-between">
         <span>{label}</span>
         {disabled && disabledMessage && (
-          <span className="text-[10px] text-[var(--gold-400)] tracking-normal normal-case font-normal">
+          <span className="text-[10px] text-amber-400 tracking-normal normal-case font-normal">
             {disabledMessage}
           </span>
         )}
@@ -154,7 +154,13 @@ export function PlaceInput({
       <input
         id={id}
         disabled={disabled}
-        className={`input ${disabled ? "cursor-not-allowed bg-[hsl(224_30%_5%/0.8)] border-[var(--line)] text-zinc-400 placeholder:text-zinc-500" : ""}`}
+        className={`h-[52px] w-full rounded-xl pl-11 pr-4 text-[15px] font-medium text-white transition-all outline-none border ${
+          disabled
+            ? "cursor-not-allowed bg-[#07090e]/80 border-white/5 text-zinc-500 placeholder:text-zinc-600"
+            : error
+            ? "border-red-500/80 bg-[#07090e]/60 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+            : "border-white/10 bg-[#07090e]/60 placeholder:text-zinc-500 hover:border-white/25 focus:border-amber-400/80 focus:bg-[#07090e]/90 focus:ring-2 focus:ring-amber-400/20"
+        }`}
         placeholder={placeholder}
         value={q}
         autoComplete="off"
@@ -179,34 +185,39 @@ export function PlaceInput({
           if (e.key === "Escape") setOpen(false);
         }}
       />
-      <I className="input-icon" />
+      <I className="absolute left-3.5 bottom-4 w-5 h-5 text-amber-400 pointer-events-none" />
       {allowLocate && !value && !disabled && (
-        <button type="button" onClick={locate} className="absolute right-2 bottom-2.5 grid h-9 w-9 place-items-center rounded-lg" style={{ color: "var(--gold-400)" }} aria-label="Use my location">
+        <button
+          type="button"
+          onClick={locate}
+          className="absolute right-2 bottom-2 grid h-9 w-9 place-items-center rounded-lg text-amber-400 hover:bg-amber-400/10 transition"
+          aria-label="Use my location"
+        >
           <Icon.locate />
         </button>
       )}
-      {error && <span className="error-text">{error}</span>}
+      {error && <span className="text-red-400 text-xs mt-0.5">{error}</span>}
       {open && !disabled && (
         <ul
           id={listId}
-          className={`dropdown border border-[var(--gold-400)] bg-[hsl(224_30%_8%)] shadow-2xl ${
-            openUpwards ? "dropdown-up" : ""
+          className={`absolute left-0 right-0 z-50 p-1.5 list-none m-0 rounded-2xl max-h-[280px] overflow-y-auto border border-amber-400/30 bg-[#0b0e17]/95 backdrop-blur-xl shadow-2xl ${
+            openUpwards ? "bottom-[calc(100%+6px)]" : "top-[calc(100%+6px)]"
           }`}
           role="listbox"
         >
           {allowedPlaces !== undefined && allowedPlaces !== null && (
-            <li className="px-3 py-1.5 text-[11px] font-semibold text-[var(--gold-400)] border-b border-[var(--line)] flex items-center justify-between">
+            <li className="px-3 py-1.5 text-[11px] font-semibold text-amber-400 border-b border-white/10 flex items-center justify-between">
               <span>Connected Routes ({results.length})</span>
-              <span className="mute font-normal text-[10px]">Active catalog only</span>
+              <span className="text-zinc-400 font-normal text-[10px]">Active catalog only</span>
             </li>
           )}
           {loading && results.length === 0 && (
-            <li className="p-3 text-xs text-[var(--gold-400)] text-center animate-pulse flex items-center justify-center gap-2">
+            <li className="p-3 text-xs text-amber-400 text-center animate-pulse flex items-center justify-center gap-2">
               <Icon.clock width={14} height={14} /> Loading destinations...
             </li>
           )}
           {!loading && results.length === 0 && (
-            <li className="p-3 text-xs mute text-center">
+            <li className="p-3 text-xs text-zinc-400 text-center">
               {allowedPlaces !== undefined && allowedPlaces !== null
                 ? "No connected routes available for this pickup"
                 : `No matching locations found for "${q}"`}
@@ -216,13 +227,26 @@ export function PlaceInput({
             const TI = Icon[TYPE_ICON[p.type ?? "area"] ?? "pin"];
             return (
               <li key={p.id ?? p.name} role="option" aria-selected={i === active}>
-                <button type="button" data-active={i === active} onMouseEnter={() => setActive(i)} onClick={() => pick(p)}>
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: "hsl(40 62% 64% / 0.1)", color: "var(--gold-400)" }}><TI width={18} height={18} /></span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium">{p.name}</span>
-                    <span className="mute block truncate text-xs">{p.address}</span>
+                <button
+                  type="button"
+                  className={`w-full text-left flex gap-3 items-center p-2 rounded-xl transition text-white ${
+                    i === active ? "bg-amber-400/15 text-amber-200" : "hover:bg-white/5"
+                  }`}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => pick(p)}
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-400/10 text-amber-400">
+                    <TI width={18} height={18} />
                   </span>
-                  {p.code && <span className="pill pill-gold ml-auto">{p.code}</span>}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{p.name}</span>
+                    <span className="text-zinc-400 block truncate text-xs">{p.address}</span>
+                  </span>
+                  {p.code && (
+                    <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-amber-300 border border-amber-400/30 bg-amber-400/10">
+                      {p.code}
+                    </span>
+                  )}
                 </button>
               </li>
             );

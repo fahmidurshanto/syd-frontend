@@ -60,11 +60,16 @@ export default function AdminVehiclesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="eyebrow mb-1">FLEET & CAPACITIES</span>
-          <h1 className="display text-3xl font-semibold text-white">Vehicle Classes & Tariffs</h1>
-          <p className="mute text-xs mt-1">Configure vehicle models, passenger limits, luggage allowances, and base rates</p>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2 mb-1">
+            FLEET & CAPACITIES
+          </span>
+          <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Vehicle Classes & Tariffs</h1>
+          <p className="text-zinc-400 text-xs mt-1">Configure vehicle models, passenger limits, luggage allowances, and base rates</p>
         </div>
-        <button onClick={fetchVehicles} className="btn btn-ghost btn-sm self-start sm:self-auto">
+        <button
+          onClick={fetchVehicles}
+          className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 self-start sm:self-auto transition"
+        >
           Refresh Fleet
         </button>
       </div>
@@ -82,11 +87,13 @@ export default function AdminVehiclesPage() {
             return (
               <div
                 key={v._id || v.slug}
-                className="glass p-6 rounded-2xl border border-white/10 flex flex-col justify-between relative overflow-hidden"
+                className="p-6 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl flex flex-col justify-between relative overflow-hidden"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="eyebrow">{v.group || "Sedan"}</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2">
+                      {v.group || "Sedan"}
+                    </span>
                     <button
                       onClick={() => handleToggleActive(v)}
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider transition ${
@@ -99,14 +106,14 @@ export default function AdminVehiclesPage() {
                     </button>
                   </div>
 
-                  <h2 className="display text-xl font-bold text-white mb-1">{v.name}</h2>
+                  <h2 className="font-display text-xl font-bold text-white mb-1">{v.name}</h2>
                   <p className="text-xs text-white/60 mb-4 line-clamp-2">{v.description}</p>
 
                   {/* Pricing Matrix */}
                   <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 grid grid-cols-2 gap-3 mb-4 text-xs">
                     <div>
                       <span className="text-white/40 block text-[10px] uppercase">Base Fare</span>
-                      <strong className="text-gold text-sm font-semibold">{money(v.basePrice)}</strong>
+                      <strong className="text-amber-400 text-sm font-semibold">{money(v.basePrice)}</strong>
                     </div>
                     <div>
                       <span className="text-white/40 block text-[10px] uppercase">Min Fare</span>
@@ -153,7 +160,7 @@ export default function AdminVehiclesPage() {
                 <div className="pt-4 border-t border-white/5 mt-4">
                   <button
                     onClick={() => setEditingVehicle(v)}
-                    className="w-full btn btn-ghost btn-sm justify-center"
+                    className="w-full inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 transition"
                   >
                     Edit Vehicle Rates
                   </button>
@@ -167,11 +174,13 @@ export default function AdminVehiclesPage() {
       {/* Edit Vehicle Modal */}
       {editingVehicle && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass max-w-xl w-full p-6 sm:p-8 rounded-2xl border border-white/10 relative">
+          <div className="max-w-xl w-full p-6 sm:p-8 rounded-2xl border border-white/10 bg-[#0e121d]/95 backdrop-blur-2xl shadow-2xl relative">
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
               <div>
-                <span className="eyebrow mb-1">RATES & SPECS</span>
-                <h2 className="display text-2xl font-bold text-white">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2 mb-1">
+                  RATES & SPECS
+                </span>
+                <h2 className="font-display text-2xl font-bold text-white tracking-tight">
                   Edit {editingVehicle.name}
                 </h2>
               </div>
@@ -328,14 +337,14 @@ export default function AdminVehiclesPage() {
                 <button
                   type="button"
                   onClick={() => setEditingVehicle(null)}
-                  className="btn btn-ghost btn-sm"
+                  className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="btn btn-gold btn-sm"
+                  className="inline-flex items-center justify-center h-[38px] px-5 rounded-full text-xs font-semibold text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-md transition"
                 >
                   {isSaving ? "Saving..." : "Save Vehicle Changes"}
                 </button>

@@ -10,12 +10,14 @@ export type PlaceRoute = {
   lastPlace: string;
   fair?: number;
   fare?: number;
-  increaseFairPerPerson?: number;
-  increaseFarePerPerson?: number;
+  increaseFairPerPerson?: number | Record<string, number>;
+  increaseFarePerPerson?: number | Record<string, number>;
   currency?: string;
   distanceKm?: number;
   durationMin?: number;
-  vehicleType?: string;
+  vehicleType?: string[] | string;
+  vehicleFares?: Record<string, number>;
+  vehicleAndFares?: Record<string, number>;
   notes?: string;
   firstPlaceDetails?: { address?: string; lat?: number; lng?: number; code?: string };
   lastPlaceDetails?: { address?: string; lat?: number; lng?: number; code?: string };
@@ -47,13 +49,13 @@ export function normalizePlace(raw: any): Place {
   };
 }
 
-/** Fetches autocomplete place suggestions using GET /api/v1/places/search or /places/all */
+/** Fetches autocomplete place suggestions using GET /api/v1/routes/search or /routes/all */
 export async function searchPlacesApi(q?: string): Promise<Place[]> {
   try {
     const trimmed = q?.trim();
     const endpoint = trimmed
-      ? `/places/search?q=${encodeURIComponent(trimmed)}&details=true`
-      : `/places/all?details=true`;
+      ? `/routes/search?q=${encodeURIComponent(trimmed)}&details=true`
+      : `/routes/all?details=true`;
     const res = await api<{ success?: boolean; places: any[] }>(endpoint);
     if (Array.isArray(res.places)) {
       return res.places.map(normalizePlace);
@@ -71,7 +73,7 @@ export async function getConnectedPlacesApi(origin: string): Promise<Place[]> {
 
   try {
     const res = await api<{ success?: boolean; places: any[] }>(
-      `/places/destinations?from=${encodeURIComponent(cleanOrigin)}`
+      `/routes/destinations?from=${encodeURIComponent(cleanOrigin)}`
     );
     if (Array.isArray(res.places) && res.places.length > 0) {
       return res.places.map(normalizePlace);
@@ -81,14 +83,15 @@ export async function getConnectedPlacesApi(origin: string): Promise<Place[]> {
   }
 
   try {
-    const res = await api<{ success?: boolean; places: PlaceRoute[] }>(
-      `/places?search=${encodeURIComponent(cleanOrigin)}&limit=100&isActive=true`
+    const res = await api<{ success?: boolean; routes?: PlaceRoute[]; places?: PlaceRoute[] }>(
+      `/routes?search=${encodeURIComponent(cleanOrigin)}&limit=100&isActive=true`
     );
-    if (Array.isArray(res.places)) {
+    const routeList = res.routes ?? res.places;
+    if (Array.isArray(routeList)) {
       const destMap = new Map<string, Place>();
       const lowerOrigin = cleanOrigin.toLowerCase();
 
-      for (const r of res.places) {
+      for (const r of routeList) {
         const firstMatch = r.firstPlace?.toLowerCase().includes(lowerOrigin);
         const lastMatch = r.lastPlace?.toLowerCase().includes(lowerOrigin);
 
@@ -133,26 +136,26 @@ export async function getConnectedPlacesApi(origin: string): Promise<Place[]> {
   return [];
 }
 
-/** Looks up route fare and distance/duration using GET /api/v1/places/lookup */
+/** Looks up route fare and distance/duration using GET /api/v1/routes/lookup */
 export async function lookupRouteFareApi(from: string, to: string): Promise<PlaceRoute | null> {
   if (!from?.trim() || !to?.trim()) return null;
   try {
-    const res = await api<{ success: boolean; place: PlaceRoute }>(
-      `/places/lookup?from=${encodeURIComponent(from.trim())}&to=${encodeURIComponent(to.trim())}`
+    const res = await api<{ success: boolean; route?: PlaceRoute; place?: PlaceRoute }>(
+      `/routes/lookup?from=${encodeURIComponent(from.trim())}&to=${encodeURIComponent(to.trim())}`
     );
-    return res.place ?? null;
+    return res.route ?? res.place ?? null;
   } catch {
     return null;
   }
 }
 
-/** Retrieves route fare catalog from GET /api/v1/places */
+/** Retrieves route fare catalog from GET /api/v1/routes */
 export async function getPopularRoutesApi(limit = 6): Promise<PlaceRoute[]> {
   try {
-    const res = await api<{ success: boolean; places: PlaceRoute[] }>(
-      `/places?limit=${limit}&isActive=true`
+    const res = await api<{ success: boolean; routes?: PlaceRoute[]; places?: PlaceRoute[] }>(
+      `/routes?limit=${limit}&isActive=true`
     );
-    return res.places ?? [];
+    return res.routes ?? res.places ?? [];
   } catch {
     return [];
   }
@@ -189,7 +192,34 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+let isRefreshing = false;
+let refreshSubscribers: Array<(ok: boolean) => void> = [];
+
+function onRefreshed(ok: boolean) {
+  refreshSubscribers.forEach((cb) => cb(ok));
+  refreshSubscribers = [];
+}
+
+export async function adminRefreshTokenApi(): Promise<{
+  success: boolean;
+  admin?: AdminUser;
+  accessToken?: string;
+  refreshToken?: string;
+}> {
+  const res = await fetch(`${BASE}/admins/refresh-token`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    cache: "no-store",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError(data.message || "Failed to refresh token", res.status);
+  }
+  return data;
+}
+
+export async function api<T>(path: string, init: RequestInit & { json?: unknown; _retry?: boolean } = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const res = await fetch(`${BASE}${path}`, {
     credentials: "include",
@@ -203,6 +233,34 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
     body: init.json ? JSON.stringify(init.json) : init.body,
     cache: "no-store",
   });
+
+  // If 401 Unauthorized occurs on an authenticated request and we haven't already retried
+  if (res.status === 401 && !init._retry && !path.includes("/admins/login") && !path.includes("/admins/refresh-token")) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        await adminRefreshTokenApi();
+        isRefreshing = false;
+        onRefreshed(true);
+      } catch (refreshErr) {
+        isRefreshing = false;
+        onRefreshed(false);
+        throw refreshErr;
+      }
+    } else {
+      // Queue up any parallel requests while refresh is in flight
+      const refreshSuccess = await new Promise<boolean>((resolve) => {
+        refreshSubscribers.push(resolve);
+      });
+      if (!refreshSuccess) {
+        throw new ApiError("Session expired", 401);
+      }
+    }
+
+    // Retry original request with new rotated cookie
+    return api<T>(path, { ...init, _retry: true });
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const errorMsg = Array.isArray(data.message)
@@ -278,53 +336,96 @@ export type VehicleRecord = {
   supportedServices?: string[];
 };
 
-// Admin Bookings API
-export async function getAdminBookingsApi(params?: { status?: string; search?: string; limit?: number }): Promise<BookingRecord[]> {
+// Admin Bookings API - Synced with NestJS BookingsController
+export async function getAdminBookingsApi(params?: {
+  phone?: string;
+  status?: string;
+  service?: string;
+  search?: string;
+  limit?: number;
+  skip?: number;
+}): Promise<{ total: number; bookings: BookingRecord[] }> {
   try {
     const qs = new URLSearchParams();
     if (params?.status && params.status !== "all") qs.set("status", params.status);
-    if (params?.search) qs.set("search", params.search);
+    if (params?.service && params.service !== "all") qs.set("service", params.service);
+    if (params?.phone) qs.set("phone", params.phone);
     if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.skip) qs.set("skip", String(params.skip));
 
     const endpoint = `/bookings${qs.toString() ? `?${qs.toString()}` : ""}`;
-    const res = await api<any>(endpoint);
-    if (Array.isArray(res)) return res;
-    if (Array.isArray(res.bookings)) return res.bookings;
-    if (Array.isArray(res.data)) return res.data;
-    return [];
+    const res = await api<{ success: boolean; total?: number; bookings?: BookingRecord[]; data?: BookingRecord[] }>(endpoint);
+
+    const list: BookingRecord[] = Array.isArray(res.bookings)
+      ? res.bookings
+      : Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res)
+      ? (res as unknown as BookingRecord[])
+      : [];
+
+    return {
+      total: typeof res.total === "number" ? res.total : list.length,
+      bookings: list,
+    };
   } catch (err) {
     console.error("Failed to fetch bookings:", err);
-    return [];
+    return { total: 0, bookings: [] };
   }
 }
 
-export async function updateBookingStatusApi(id: string, status: string, notes?: string): Promise<boolean> {
+export async function getBookingByIdOrRefApi(refOrId: string): Promise<BookingRecord | null> {
   try {
-    await api(`/bookings/${id}`, {
-      method: "PATCH",
-      json: { status, ...(notes ? { notes } : {}) },
-    });
-    return true;
-  } catch {
-    try {
-      await api(`/bookings/${id}`, {
-        method: "PUT",
-        json: { status, ...(notes ? { notes } : {}) },
-      });
-      return true;
-    } catch {
-      return false;
-    }
+    const res = await api<{ success: boolean; booking: BookingRecord }>(`/bookings/${encodeURIComponent(refOrId)}`);
+    return res.booking ?? null;
+  } catch (err) {
+    console.error(`Failed to fetch booking ${refOrId}:`, err);
+    return null;
+  }
+}
+
+export async function updateBookingStatusApi(
+  refOrId: string,
+  dto: { status?: string; paymentStatus?: string; notes?: string; cancellationReason?: string }
+): Promise<{ ok: boolean; booking?: BookingRecord; error?: string }> {
+  try {
+    const res = await api<{ success: boolean; message?: string; booking?: BookingRecord }>(
+      `/bookings/${encodeURIComponent(refOrId)}/status`,
+      {
+        method: "PATCH",
+        json: dto,
+      }
+    );
+    return { ok: true, booking: res.booking };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to update booking status";
+    return { ok: false, error: msg };
+  }
+}
+
+export async function cancelBookingApi(
+  refOrId: string,
+  reason?: string
+): Promise<{ ok: boolean; booking?: BookingRecord; error?: string }> {
+  try {
+    const res = await api<{ success: boolean; message?: string; booking?: BookingRecord }>(
+      `/bookings/${encodeURIComponent(refOrId)}/cancel`,
+      {
+        method: "POST",
+        json: reason ? { reason } : {},
+      }
+    );
+    return { ok: true, booking: res.booking };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to cancel booking";
+    return { ok: false, error: msg };
   }
 }
 
 export async function deleteBookingApi(id: string): Promise<boolean> {
-  try {
-    await api(`/bookings/${id}`, { method: "DELETE" });
-    return true;
-  } catch {
-    return false;
-  }
+  // Gracefully fallback to cancel on the server as NestJS BookingsController handles cancel/status updates
+  const res = await cancelBookingApi(id, "Cancelled by dispatch administrator");
+  return res.ok;
 }
 
 // Admin Places / Routes API
@@ -333,39 +434,48 @@ export async function getAdminPlacesApi(search?: string, limit = 100): Promise<P
     const qs = new URLSearchParams();
     if (search) qs.set("search", search);
     qs.set("limit", String(limit));
-    const res = await api<{ places: PlaceRoute[] }>(`/places?${qs.toString()}`);
-    return res.places ?? [];
+    const res = await api<{ routes?: PlaceRoute[]; places?: PlaceRoute[] }>(`/routes?${qs.toString()}`);
+    return res.routes ?? res.places ?? [];
   } catch {
     return [];
   }
 }
 
-export async function savePlaceRouteApi(route: Partial<PlaceRoute>): Promise<boolean> {
+export async function savePlaceRouteApi(route: Partial<PlaceRoute>): Promise<{ success: boolean; error?: string }> {
   try {
     if (route._id) {
-      await api(`/places/${route._id}`, {
-        method: "PUT",
+      await api(`/routes/${route._id}`, {
+        method: "PATCH",
         json: route,
       });
     } else {
-      await api("/places", {
+      await api("/routes", {
         method: "POST",
         json: route,
       });
     }
-    return true;
-  } catch (err) {
+    return { success: true };
+  } catch (err: any) {
     console.error("Failed saving place route:", err);
-    return false;
+    return { success: false, error: err?.message || "Failed to save route" };
   }
 }
 
 export async function deletePlaceRouteApi(id: string): Promise<boolean> {
   try {
-    await api(`/places/${id}`, { method: "DELETE" });
+    await api(`/routes/${id}`, { method: "DELETE" });
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function seedDefaultRoutesApi(): Promise<{ success: boolean; error?: string }> {
+  try {
+    await api("/routes/seed", { method: "POST" });
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to seed default routes" };
   }
 }
 
@@ -383,7 +493,7 @@ export async function saveVehicleApi(vehicle: Partial<VehicleRecord>): Promise<b
   try {
     if (vehicle._id) {
       await api(`/vehicles/${vehicle._id}`, {
-        method: "PUT",
+        method: "PATCH",
         json: vehicle,
       });
     } else {

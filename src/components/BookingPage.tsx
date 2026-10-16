@@ -81,104 +81,161 @@ function BookingForm({ service }: { service: Service }) {
 
   if (bookingResult) {
     return (
-      <div className="glass reveal max-w-xl mx-auto p-8 text-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full mx-auto mb-4" style={{ background: "hsl(152 55% 52% / 0.15)", color: "var(--success)" }}>
+      <div className="reveal max-w-xl mx-auto p-8 text-center rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-2xl shadow-2xl">
+        <div className="grid h-16 w-16 place-items-center rounded-full mx-auto mb-4 bg-emerald-500/15 text-emerald-400">
           <Icon.check width={32} height={32} />
         </div>
-        <h2 className="display text-3xl">BOOKING CONFIRMED</h2>
-        <p className="dim mt-2">Booking Reference: <strong className="text-gold">{bookingResult.number}</strong></p>
-        <p className="mute mt-4 text-sm">Status: {bookingResult.status}. We have sent an SMS update to your phone number.</p>
-        <button onClick={() => window.location.href = "/"} className="btn btn-gold mt-8">Return to Home</button>
+        <h2 className="font-display font-semibold text-3xl tracking-tight text-white">BOOKING CONFIRMED</h2>
+        <p className="text-zinc-300 mt-2">Booking Reference: <strong className="text-amber-400 font-mono">{bookingResult.number}</strong></p>
+        <p className="text-zinc-400 mt-4 text-sm">Status: {bookingResult.status}. We have sent an SMS update to your phone number.</p>
+        <button
+          onClick={() => window.location.href = "/"}
+          className="inline-flex items-center justify-center h-12 px-8 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg mt-8 transition active:scale-95"
+        >
+          Return to Home
+        </button>
       </div>
     );
   }
 
   return (
     <div className="grid gap-8 lg:grid-cols-2">
-      <div className="glass p-6 sm:p-8">
-        <h2 className="display text-2xl mb-6">1. Trip Details</h2>
+      <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-2xl shadow-xl">
+        <h2 className="font-display font-semibold text-2xl tracking-tight text-white mb-6">1. Trip Details</h2>
         <form onSubmit={getQuote} className="space-y-4">
           <PlaceInput id="book-from" label="Pickup Location" placeholder="Airport, hotel or address" value={from} onChange={setFrom} icon="pin" allowLocate />
           <PlaceInput id="book-to" label="Destination" placeholder="Where to?" value={to} onChange={setTo} icon="flag" />
           
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="field">
-              <label htmlFor="book-when" className="label">Pickup Date & Time</label>
-              <input id="book-when" type="datetime-local" className="input no-icon" value={when} onChange={(e) => setWhen(e.target.value)} />
+            <div className="relative flex flex-col gap-1.5 min-w-0">
+              <label htmlFor="book-when" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Pickup Date & Time</label>
+              <input
+                id="book-when"
+                type="datetime-local"
+                className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
+                value={when}
+                onChange={(e) => setWhen(e.target.value)}
+              />
             </div>
-            <div className="field">
-              <label htmlFor="book-pax" className="label">Passengers</label>
-              <input id="book-pax" type="number" min="1" max="14" className="input no-icon" value={passengers} onChange={(e) => setPassengers(Number(e.target.value))} />
+            <div className="relative flex flex-col gap-1.5 min-w-0">
+              <label htmlFor="book-pax" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Passengers</label>
+              <input
+                id="book-pax"
+                type="number"
+                min="1"
+                max="14"
+                className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
+                value={passengers}
+                onChange={(e) => setPassengers(Number(e.target.value))}
+              />
             </div>
           </div>
 
           {service === "airport" && (
-            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-[var(--line)]">
-              <div className="field">
-                <label htmlFor="book-flight-type" className="label">Transfer Type</label>
-                <select id="book-flight-type" className="input no-icon" value={airportTripType} onChange={(e: any) => setAirportTripType(e.target.value)}>
-                  <option value="pickup">Airport Pickup</option>
-                  <option value="dropoff">Airport Drop-off</option>
+            <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-white/10">
+              <div className="relative flex flex-col gap-1.5 min-w-0">
+                <label htmlFor="book-flight-type" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Transfer Type</label>
+                <select
+                  id="book-flight-type"
+                  className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition cursor-pointer"
+                  value={airportTripType}
+                  onChange={(e: any) => setAirportTripType(e.target.value)}
+                >
+                  <option value="pickup" className="bg-[#0b0e17] text-white">Airport Pickup</option>
+                  <option value="dropoff" className="bg-[#0b0e17] text-white">Airport Drop-off</option>
                 </select>
               </div>
-              <div className="field">
-                <label htmlFor="book-flight-num" className="label">Flight Number</label>
-                <input id="book-flight-num" type="text" placeholder="e.g. QF1" className="input no-icon" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} />
+              <div className="relative flex flex-col gap-1.5 min-w-0">
+                <label htmlFor="book-flight-num" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Flight Number</label>
+                <input
+                  id="book-flight-num"
+                  type="text"
+                  placeholder="e.g. QF1"
+                  className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
+                  value={flightNumber}
+                  onChange={(e) => setFlightNumber(e.target.value)}
+                />
               </div>
             </div>
           )}
 
-          {error && <div className="error-text text-sm">{error}</div>}
+          {error && <div className="text-red-400 text-sm mt-1">{error}</div>}
 
-          <button type="submit" disabled={loading} className="btn btn-gold btn-block h-12 mt-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full inline-flex items-center justify-center h-12 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg mt-6 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {loading ? "Calculating Fare..." : "Calculate Fare & Options"}
           </button>
         </form>
       </div>
 
-      <div className="glass p-6 sm:p-8">
-        <h2 className="display text-2xl mb-6">2. Vehicle & Checkout</h2>
+      <div className="p-6 sm:p-8 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-2xl shadow-xl">
+        <h2 className="font-display font-semibold text-2xl tracking-tight text-white mb-6">2. Vehicle & Checkout</h2>
         {options.length === 0 ? (
-          <div className="mute text-center py-12">
-            <Icon.car className="mx-auto mb-3 opacity-40" width={48} height={48} />
-            <p>Enter your pickup & destination details to view instant quotes.</p>
+          <div className="text-zinc-400 text-center py-12">
+            <Icon.car className="mx-auto mb-3 opacity-40 text-amber-400" width={48} height={48} />
+            <p className="text-sm">Enter your pickup & destination details to view instant quotes.</p>
           </div>
         ) : (
           <form onSubmit={confirmBooking} className="space-y-6">
             <div className="space-y-3">
-              <label className="label">Select Vehicle</label>
+              <label className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Select Vehicle</label>
               {options.map((opt) => (
                 <div
                   key={opt.category.slug}
                   onClick={() => setSelectedQuote(opt)}
-                  className={`card p-4 cursor-pointer flex items-center justify-between border ${
-                    selectedQuote?.category.slug === opt.category.slug ? "border-[var(--gold-400)] bg-[hsl(40_62%_64%/0.05)]" : "border-[var(--line)]"
+                  className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between border transition-all ${
+                    selectedQuote?.category.slug === opt.category.slug
+                      ? "border-amber-400/80 bg-amber-400/10 shadow-[0_0_20px_-5px_rgba(251,191,36,0.3)]"
+                      : "border-white/10 bg-[#07090e]/50 hover:border-white/20 hover:bg-[#07090e]/80"
                   }`}
                 >
                   <div>
-                    <h3 className="font-semibold text-lg">{opt.category.name}</h3>
-                    <p className="mute text-xs">{opt.category.passengersMax} Passengers · {opt.category.luggage} Bags</p>
+                    <h3 className="font-semibold text-lg text-white">{opt.category.name}</h3>
+                    <p className="text-zinc-400 text-xs">{opt.category.passengersMax} Passengers · {opt.category.luggage} Bags</p>
                   </div>
                   <div className="text-right">
-                    <span className="display text-xl text-gold">{money(opt.price.total)}</span>
-                    <p className="mute text-xs">GST incl.</p>
+                    <span className="font-display font-bold text-xl text-amber-400">{money(opt.price.total)}</span>
+                    <p className="text-zinc-400 text-xs">GST incl.</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-[var(--line)]">
-              <div className="field">
-                <label htmlFor="book-name" className="label">Passenger Name</label>
-                <input id="book-name" type="text" placeholder="John Doe" className="input no-icon" value={passengerName} onChange={(e) => setPassengerName(e.target.value)} required />
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <div className="relative flex flex-col gap-1.5 min-w-0">
+                <label htmlFor="book-name" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Passenger Name</label>
+                <input
+                  id="book-name"
+                  type="text"
+                  placeholder="John Doe"
+                  className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
+                  value={passengerName}
+                  onChange={(e) => setPassengerName(e.target.value)}
+                  required
+                />
               </div>
-              <div className="field">
-                <label htmlFor="book-phone" className="label">Passenger Mobile Phone</label>
-                <input id="book-phone" type="tel" placeholder="0412 345 678" className="input no-icon" value={passengerPhone} onChange={(e) => setPassengerPhone(e.target.value)} required />
+              <div className="relative flex flex-col gap-1.5 min-w-0">
+                <label htmlFor="book-phone" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Passenger Mobile Phone</label>
+                <input
+                  id="book-phone"
+                  type="tel"
+                  placeholder="0412 345 678"
+                  className="h-[52px] w-full rounded-xl px-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
+                  value={passengerPhone}
+                  onChange={(e) => setPassengerPhone(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
-            <button type="submit" disabled={loading || !selectedQuote} className="btn btn-gold btn-block h-12 mt-6">
+            <button
+              type="submit"
+              disabled={loading || !selectedQuote}
+              className="w-full inline-flex items-center justify-center h-12 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg mt-6 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? "Processing Booking..." : `Confirm & Book (${money(selectedQuote?.price.total)})`}
             </button>
           </form>
@@ -191,14 +248,16 @@ function BookingForm({ service }: { service: Service }) {
 export function BookingPage({ service }: { service: Service }) {
   const titles: Record<Service, string> = { taxi: "TAXI BOOKING", airport: "AIRPORT TRANSFER", chauffeur: "LUXURY CHAUFFEUR" };
   return (
-    <div className="section pt-32">
-      <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">Instant Quote & Reserve</span>
-          <h1 className="display">{titles[service]}</h1>
-          <p className="dim">Transparent fixed pricing, zero hidden surges. Fully driver-matched & tracked.</p>
+    <div className="py-20 sm:py-28 pt-32 relative">
+      <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
+        <div className="max-w-2xl mb-12">
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+            Instant Quote & Reserve
+          </span>
+          <h1 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">{titles[service]}</h1>
+          <p className="text-zinc-400 text-base sm:text-lg">Transparent fixed pricing, zero hidden surges. Fully driver-matched & tracked.</p>
         </div>
-        <Suspense fallback={<div className="skeleton h-96 w-full" />}>
+        <Suspense fallback={<div className="h-96 w-full rounded-2xl bg-white/5 animate-pulse" />}>
           <BookingForm service={service} />
         </Suspense>
       </div>

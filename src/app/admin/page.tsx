@@ -14,12 +14,12 @@ export default function AdminDashboardPage() {
     async function loadData() {
       setLoading(true);
       try {
-        const [bList, pList, vList] = await Promise.all([
+        const [bData, pList, vList] = await Promise.all([
           getAdminBookingsApi({ limit: 100 }),
           getAdminPlacesApi("", 100),
           getAdminVehiclesApi(),
         ]);
-        setBookings(bList);
+        setBookings(bData.bookings);
         setPlaces(pList);
         setVehicles(vList);
       } catch (err) {
@@ -55,15 +55,23 @@ export default function AdminDashboardPage() {
       {/* Top Welcome & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="eyebrow mb-1">OPERATIONS OVERVIEW</span>
-          <h1 className="display text-3xl font-semibold text-white">Sydney Dispatch Central</h1>
-          <p className="mute text-xs mt-1">Real-time status of passenger bookings, fixed routes, and fleet inventory</p>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2 mb-1">
+            OPERATIONS OVERVIEW
+          </span>
+          <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Sydney Dispatch Central</h1>
+          <p className="text-zinc-400 text-xs mt-1">Real-time status of passenger bookings, fixed routes, and fleet inventory</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/admin/bookings" className="btn btn-gold btn-sm">
+          <Link
+            href="/admin/bookings"
+            className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-md transition"
+          >
             Manage Bookings
           </Link>
-          <Link href="/admin/places" className="btn btn-ghost btn-sm">
+          <Link
+            href="/admin/routes"
+            className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 transition"
+          >
             Add Route Fare
           </Link>
         </div>
@@ -72,7 +80,7 @@ export default function AdminDashboardPage() {
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Bookings */}
-        <div className="glass p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+        <div className="p-5 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl relative overflow-hidden">
           <div className="flex items-center justify-between text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
             <span>Total Bookings</span>
             <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
@@ -82,7 +90,7 @@ export default function AdminDashboardPage() {
               </svg>
             </span>
           </div>
-          <div className="display text-3xl font-bold text-white mb-1">
+          <div className="font-display text-3xl font-bold text-white mb-1">
             {loading ? "..." : totalBookings}
           </div>
           <div className="text-[11px] text-white/50 flex items-center gap-1.5">
@@ -92,17 +100,17 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Revenue */}
-        <div className="glass p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+        <div className="p-5 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl relative overflow-hidden">
           <div className="flex items-center justify-between text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
             <span>Gross Revenue</span>
-            <span className="p-1.5 rounded-lg bg-amber-500/10 text-gold">
+            <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="1" x2="12" y2="23"></line>
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
               </svg>
             </span>
           </div>
-          <div className="display text-3xl font-bold text-gold mb-1">
+          <div className="font-display text-3xl font-bold text-amber-400 mb-1">
             {loading ? "..." : money(totalRevenueCents)}
           </div>
           <div className="text-[11px] text-white/50">
@@ -111,7 +119,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Active Routes */}
-        <div className="glass p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+        <div className="p-5 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl relative overflow-hidden">
           <div className="flex items-center justify-between text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
             <span>Fixed Routes</span>
             <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -121,7 +129,7 @@ export default function AdminDashboardPage() {
               </svg>
             </span>
           </div>
-          <div className="display text-3xl font-bold text-white mb-1">
+          <div className="font-display text-3xl font-bold text-white mb-1">
             {loading ? "..." : `${activeRoutes}`}
           </div>
           <div className="text-[11px] text-white/50">
@@ -130,7 +138,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Active Fleet */}
-        <div className="glass p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+        <div className="p-5 rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl relative overflow-hidden">
           <div className="flex items-center justify-between text-white/50 text-xs font-medium uppercase tracking-wider mb-2">
             <span>Fleet Categories</span>
             <span className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
@@ -152,7 +160,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Status Breakdown Bar */}
-      <div className="glass p-6 rounded-2xl border border-white/10">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-6 shadow-2xl">
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">Trip Pipeline Status</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
@@ -175,13 +183,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Recent Bookings Table */}
-      <div className="glass rounded-2xl border border-white/10 overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-xl overflow-hidden">
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-white">Recent Customer Bookings</h2>
             <p className="text-xs text-white/50">Latest trip orders placed across Sydney Airport Transfer</p>
           </div>
-          <Link href="/admin/bookings" className="text-xs text-gold hover:underline">
+          <Link href="/admin/bookings" className="text-xs text-amber-400 hover:underline">
             View All ({bookings.length}) →
           </Link>
         </div>
@@ -222,7 +230,7 @@ export default function AdminDashboardPage() {
 
                   return (
                     <tr key={b._id} className="hover:bg-white/5 transition">
-                      <td className="py-3.5 px-4 font-mono font-medium text-gold">
+                      <td className="py-3.5 px-4 font-mono font-medium text-amber-400">
                         {b.bookingNumber || b._id.slice(-6).toUpperCase()}
                       </td>
                       <td className="py-3.5 px-4">

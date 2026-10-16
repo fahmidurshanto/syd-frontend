@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   getAdminBookingsApi,
   updateBookingStatusApi,
+  cancelBookingApi,
   deleteBookingApi,
   money,
   sydneyTime,
@@ -18,24 +19,40 @@ const STATUS_FILTERS = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
+const SERVICE_FILTERS = [
+  { id: "all", label: "All Services" },
+  { id: "taxi", label: "Taxi" },
+  { id: "airport", label: "Airport" },
+  { id: "chauffeur", label: "Chauffeur" },
+];
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<BookingRecord | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [statusNote, setStatusNote] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("pending");
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
+      // If searchTerm looks like a phone number, pass as phone query to server
+      const isPhoneSearch = /^[\d\s+()-]+$/.test(searchTerm.trim()) && searchTerm.trim().length >= 3;
+
       const data = await getAdminBookingsApi({
         status: statusFilter !== "all" ? statusFilter : undefined,
-        search: searchTerm.trim() || undefined,
-        limit: 200,
+        service: serviceFilter !== "all" ? serviceFilter : undefined,
+        phone: isPhoneSearch ? searchTerm.trim() : undefined,
+        limit: 100,
       });
-      setBookings(data);
+
+      setBookings(data.bookings);
+      setTotalCount(data.total);
     } catch (err) {
       console.error("Failed loading bookings:", err);
     } finally {
@@ -45,35 +62,72 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [statusFilter]);
+  }, [statusFilter, serviceFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchBookings();
   };
 
+  // Syncs with PATCH /api/v1/bookings/:refOrId/status
   const handleUpdateStatus = async (newStatus: string) => {
     if (!selectedBooking) return;
     setActionLoading(true);
-    const ok = await updateBookingStatusApi(selectedBooking._id, newStatus, statusNote);
-    if (ok) {
+
+    const refOrId = selectedBooking.bookingNumber || selectedBooking._id;
+    const res = await updateBookingStatusApi(refOrId, {
+      status: newStatus,
+      paymentStatus: paymentStatus || selectedBooking.paymentStatus,
+      notes: statusNote || selectedBooking.notes,
+    });
+
+    if (res.ok && res.booking) {
+      setSelectedBooking(res.booking);
+      fetchBookings();
+    } else if (res.ok) {
       setSelectedBooking({
         ...selectedBooking,
         status: newStatus as any,
         notes: statusNote || selectedBooking.notes,
+        paymentStatus: paymentStatus as any,
       });
       fetchBookings();
+    } else {
+      alert(res.error || "Failed to update booking status");
+    }
+    setActionLoading(false);
+  };
+
+  // Syncs with POST /api/v1/bookings/:refOrId/cancel
+  const handleCancelBooking = async (refOrId: string) => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    setActionLoading(true);
+
+    const res = await cancelBookingApi(refOrId, statusNote || "Cancelled by dispatch administrator");
+    if (res.ok) {
+      if (selectedBooking) {
+        setSelectedBooking({
+          ...selectedBooking,
+          status: "cancelled",
+          cancellationReason: statusNote || "Cancelled by dispatch administrator",
+        });
+      }
+      fetchBookings();
+    } else {
+      alert(res.error || "Failed to cancel booking");
     }
     setActionLoading(false);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this booking record?")) return;
+    if (!confirm("Are you sure you want to permanently delete/cancel this booking record?")) return;
     setActionLoading(true);
-    const ok = await deleteBookingApi(id);
-    if (ok) {
+    const success = await deleteBookingApi(id);
+    if (success) {
       setSelectedBooking(null);
       fetchBookings();
+    } else {
+      alert("Failed to delete booking");
     }
     setActionLoading(false);
   };
@@ -96,13 +150,15 @@ export default function AdminBookingsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="eyebrow mb-1">DISPATCH CONTROL</span>
-          <h1 className="display text-3xl font-semibold text-white">Passenger Bookings</h1>
-          <p className="mute text-xs mt-1">Manage live rides, update dispatch statuses, and inspect trip itineraries</p>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2 mb-1">
+            DISPATCH CONTROL
+          </span>
+          <h1 className="font-display text-3xl font-semibold text-white tracking-tight">Passenger Bookings</h1>
+          <p className="text-zinc-400 text-xs mt-1">Manage live rides, update dispatch statuses, and inspect trip itineraries</p>
         </div>
         <button
           onClick={fetchBookings}
-          className="btn btn-ghost btn-sm self-start sm:self-auto flex items-center gap-2"
+          className="inline-flex items-center justify-center gap-2 h-[38px] px-4 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 self-start sm:self-auto transition"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="23 4 23 10 17 10"></polyline>
@@ -113,50 +169,75 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-        {/* Status Pills */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 overflow-x-auto">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setStatusFilter(f.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
-                statusFilter === f.id
-                  ? "bg-amber-400 text-black font-semibold shadow-sm"
-                  : "text-white/60 hover:text-white"
-              }`}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          {/* Status Pills */}
+          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 overflow-x-auto">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setStatusFilter(f.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                  statusFilter === f.id
+                    ? "bg-amber-400 text-black font-semibold shadow-sm"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search ref, passenger, phone..."
+              className="w-full px-3.5 py-2 pl-9 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-xs focus:border-amber-400 focus:outline-none"
+            />
+            <svg
+              className="absolute left-3 top-2.5 text-white/40"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              {f.label}
-            </button>
-          ))}
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </form>
         </div>
 
-        {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search ref, passenger, phone..."
-            className="w-full px-3.5 py-2 pl-9 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-xs focus:border-gold-400 focus:outline-none"
-          />
-          <svg
-            className="absolute left-3 top-2.5 text-white/40"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </form>
+        {/* Service Pills & Count */}
+        <div className="flex items-center justify-between gap-2 overflow-x-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mr-1">Service:</span>
+            {SERVICE_FILTERS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setServiceFilter(s.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition ${
+                  serviceFilter === s.id
+                    ? "bg-white/20 text-white font-semibold border border-white/20"
+                    : "text-white/50 hover:text-white bg-white/[0.03] border border-white/5"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-white/50 font-medium whitespace-nowrap">
+            Showing <span className="text-white font-bold">{filteredBookings.length}</span> of <span className="text-amber-400 font-bold">{totalCount || bookings.length}</span> total
+          </div>
+        </div>
       </div>
 
       {/* Main Table */}
-      <div className="glass rounded-2xl border border-white/10 overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-white/5 border-b border-white/10 text-white/50 uppercase tracking-wider">
@@ -201,7 +282,7 @@ export default function AdminBookingsPage() {
                       }}
                       className="hover:bg-white/5 cursor-pointer transition"
                     >
-                      <td className="py-3.5 px-4 font-mono font-semibold text-gold">
+                      <td className="py-3.5 px-4 font-mono font-semibold text-amber-400">
                         {b.bookingNumber || b._id.slice(-6).toUpperCase()}
                       </td>
                       <td className="py-3.5 px-4">
@@ -272,13 +353,15 @@ export default function AdminBookingsPage() {
       {/* Booking Details & Status Modal */}
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-2xl border border-white/10 relative">
+          <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-2xl border border-white/10 bg-[#0e121d]/95 backdrop-blur-2xl shadow-2xl relative">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10">
               <div>
-                <span className="eyebrow mb-1">BOOKING DETAILS</span>
-                <h2 className="display text-2xl font-bold text-white">
-                  Ref: <span className="text-gold font-mono">{selectedBooking.bookingNumber || selectedBooking._id}</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2 mb-1">
+                  BOOKING DETAILS
+                </span>
+                <h2 className="font-display text-2xl font-bold text-white tracking-tight">
+                  Ref: <span className="text-amber-400 font-mono">{selectedBooking.bookingNumber || selectedBooking._id}</span>
                 </h2>
               </div>
               <button
@@ -375,16 +458,44 @@ export default function AdminBookingsPage() {
 
               {/* Dispatch Action & Notes */}
               <div className="space-y-3 pt-2">
-                <label className="block text-white/70 font-semibold">
-                  Dispatcher Notes & Driver Assignment:
-                </label>
-                <textarea
-                  value={statusNote}
-                  onChange={(e) => setStatusNote(e.target.value)}
-                  placeholder="Enter dispatch notes, assigned driver name, or cancellation reason..."
-                  rows={2}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs placeholder-white/30 focus:outline-none focus:border-gold-400"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/70 font-semibold mb-1">
+                      Payment Status:
+                    </label>
+                    <select
+                      value={paymentStatus || selectedBooking.paymentStatus || "pending"}
+                      onChange={(e) => setPaymentStatus(e.target.value)}
+                      className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="pending" className="bg-[#0e121d] text-white">Pending</option>
+                      <option value="paid" className="bg-[#0e121d] text-white">Paid</option>
+                      <option value="cash_to_driver" className="bg-[#0e121d] text-white">Cash to Driver</option>
+                      <option value="card" className="bg-[#0e121d] text-white">Card</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-white/70 font-semibold mb-1">
+                      Quick Status Transition:
+                    </label>
+                    <div className="text-[11px] text-white/40 pt-2">
+                      Current: <span className="font-semibold text-amber-400 capitalize">{selectedBooking.status || "pending"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 font-semibold mb-1">
+                    Dispatcher Notes / Cancellation Reason:
+                  </label>
+                  <textarea
+                    value={statusNote}
+                    onChange={(e) => setStatusNote(e.target.value)}
+                    placeholder="Enter dispatch notes, assigned driver name, or reason for status update..."
+                    rows={2}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs placeholder-white/30 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
               </div>
 
               {/* Status Update Controls */}
@@ -396,30 +507,44 @@ export default function AdminBookingsPage() {
                   <button
                     disabled={actionLoading}
                     onClick={() => handleUpdateStatus("pending")}
-                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition disabled:opacity-50"
                   >
                     Mark Pending
                   </button>
                   <button
                     disabled={actionLoading}
                     onClick={() => handleUpdateStatus("confirmed")}
-                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30"
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition disabled:opacity-50"
                   >
                     Confirm Booking
                   </button>
                   <button
                     disabled={actionLoading}
+                    onClick={() => handleUpdateStatus("assigned")}
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 transition disabled:opacity-50"
+                  >
+                    Assign Driver
+                  </button>
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleUpdateStatus("in_progress")}
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/30 transition disabled:opacity-50"
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    disabled={actionLoading}
                     onClick={() => handleUpdateStatus("completed")}
-                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition disabled:opacity-50"
                   >
                     Mark Completed
                   </button>
                   <button
                     disabled={actionLoading}
-                    onClick={() => handleUpdateStatus("cancelled")}
-                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30"
+                    onClick={() => handleCancelBooking(selectedBooking.bookingNumber || selectedBooking._id)}
+                    className="px-3 py-1.5 rounded-lg font-medium text-xs bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 transition disabled:opacity-50"
                   >
-                    Cancel Booking
+                    Cancel Trip
                   </button>
                 </div>
               </div>
@@ -430,13 +555,13 @@ export default function AdminBookingsPage() {
               <button
                 disabled={actionLoading}
                 onClick={() => handleDelete(selectedBooking._id)}
-                className="text-red-400 hover:text-red-300 text-xs px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition"
+                className="text-red-400 hover:text-red-300 text-xs px-3.5 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition disabled:opacity-50"
               >
                 Delete Record
               </button>
               <button
                 onClick={() => setSelectedBooking(null)}
-                className="btn btn-ghost btn-sm"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white/80 bg-white/10 hover:bg-white/20 transition"
               >
                 Close
               </button>

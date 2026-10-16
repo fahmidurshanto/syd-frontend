@@ -34,7 +34,7 @@ const ADMIN_NAV = [
     ),
   },
   {
-    href: "/admin/places",
+    href: "/admin/routes",
     label: "Routes & Pricing",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -111,16 +111,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           {/* Logo Brand Header */}
           <div className="h-18 flex items-center px-6 gap-3 border-b border-white/10">
             <span
-              className="grid h-9 w-9 place-items-center rounded-xl shadow-md"
-              style={{ background: "linear-gradient(135deg, var(--gold-300), var(--gold-600))" }}
+              className="grid h-9 w-9 place-items-center rounded-xl shadow-md bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink-950)" strokeWidth="2.2" strokeLinecap="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#05070c" strokeWidth="2.2" strokeLinecap="round">
                 <path d="M3 17c3-6 6-9 9-9s6 3 9 9M7 17c1.5-3 3-4.5 5-4.5s3.5 1.5 5 4.5" />
               </svg>
             </span>
             <div>
-              <div className="display text-base font-semibold tracking-tight text-white">
-                {SITE.short} <span className="text-gold font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">Admin</span>
+              <div className="font-display text-base font-semibold tracking-tight text-white">
+                {SITE.short} <span className="text-amber-400 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-amber-400/10 border border-amber-400/20">Admin</span>
               </div>
               <div className="text-[11px] text-white/40">Sydney Dispatch Hub</div>
             </div>
@@ -137,7 +136,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                   onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
                     active
-                      ? "bg-amber-400/15 text-gold border border-amber-400/30 shadow-sm"
+                      ? "bg-amber-400/15 text-amber-300 border border-amber-400/30 shadow-sm"
                       : "text-white/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -152,7 +151,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Sidebar Footer with Dispatcher Info and Quick Link */}
         <div className="p-4 border-t border-white/10 space-y-3">
           <div className="flex items-center gap-3 px-2 py-1">
-            <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-gold text-xs font-bold uppercase">
+            <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-xs font-bold uppercase">
               {adminUser?.name ? adminUser.name.slice(0, 2).toUpperCase() : "AD"}
             </div>
             <div className="overflow-hidden">

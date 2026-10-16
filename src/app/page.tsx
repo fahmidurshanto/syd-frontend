@@ -42,17 +42,21 @@ export default function HomePage() {
   return (
     <>
       {/* HP-1: Hero Section */}
-      <section className="hero relative z-20">
-        <div className="hero-bg">
-          <Image src="/hero.png" alt="Sydney Chauffeur Transfer" fill priority sizes="100vw" quality={90} />
+      <section className="relative z-20 min-h-[100svh] flex items-center pt-[calc(72px+2rem)] pb-16 overflow-hidden">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <Image src="/hero.png" alt="Sydney Chauffeur Transfer" fill priority sizes="100vw" quality={90} className="object-cover object-[65%_60%] scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#07090e] via-[#07090e]/85 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07090e] via-transparent to-transparent" />
         </div>
-        <div className="container relative z-10">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto relative z-10">
           <div className="max-w-3xl">
-            <span className="eyebrow fade-up" style={{ animationDelay: "100ms" }}>Greater Sydney & Regional NSW</span>
-            <h1 className="display fade-up text-white" style={{ animationDelay: "180ms" }}>
-              MOVE WITH <span className="text-gold">CONFIDENCE</span>.
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current fade-up" style={{ animationDelay: "100ms" }}>
+              Greater Sydney & Regional NSW
+            </span>
+            <h1 className="font-display font-bold text-4xl sm:text-6xl lg:text-7xl tracking-tight text-white mt-4 mb-3 leading-[1.05] fade-up" style={{ animationDelay: "180ms" }}>
+              MOVE WITH <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent">CONFIDENCE</span>.
             </h1>
-            <p className="dim fade-up mb-8 text-lg sm:text-xl" style={{ animationDelay: "220ms" }}>
+            <p className="text-zinc-300 fade-up mb-8 text-lg sm:text-xl leading-relaxed" style={{ animationDelay: "220ms" }}>
               Premium taxi, Sydney airport transfer, luxury chauffeur & corporate mobility. Fixed rates, verified drivers, 24/7 reliability.
             </p>
           </div>
@@ -61,23 +65,30 @@ export default function HomePage() {
       </section>
 
       {/* HP-2: Quick Action Cards */}
-      <section className="section relative z-10 bg-[var(--ink-900)]">
-        <div className="container">
+      <section className="py-16 sm:py-24 relative z-10 bg-[#080a11]">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {QUICK_ACTIONS.map((qa) => {
               const I = Icon[qa.icon];
               return (
-                <Link key={qa.id} href={qa.href} className="card card-hover reveal p-6" id={`quick-action-${qa.id}`}>
+                <Link
+                  key={qa.id}
+                  href={qa.href}
+                  className="reveal p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-[#111624] to-[#0a0d16] hover:-translate-y-1.5 hover:border-amber-400/50 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.25)] transition-all duration-300 group"
+                  id={`quick-action-${qa.id}`}
+                >
                   <div className="flex items-start justify-between">
-                    <span className="grid h-12 w-12 place-items-center rounded-xl" style={{ background: "hsl(40 62% 64% / 0.1)", color: "var(--gold-400)" }}>
+                    <span className="grid h-12 w-12 place-items-center rounded-xl bg-amber-400/10 text-amber-400 group-hover:bg-amber-400 group-hover:text-black transition-colors">
                       <I width={24} height={24} />
                     </span>
-                    <span className="pill pill-gold">{qa.badge}</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-amber-300 border border-amber-400/30 bg-amber-400/10">
+                      {qa.badge}
+                    </span>
                   </div>
-                  <h3 className="display mt-6 text-xl">{qa.title}</h3>
-                  <p className="mute mt-2 text-sm">{qa.desc}</p>
-                  <div className="mt-6 flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--gold-300)" }}>
-                    Book now <Icon.arrow width={16} height={16} />
+                  <h3 className="font-display font-semibold text-white mt-6 text-xl tracking-tight">{qa.title}</h3>
+                  <p className="text-zinc-400 mt-2 text-sm leading-relaxed">{qa.desc}</p>
+                  <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-amber-300 group-hover:text-amber-200">
+                    Book now <Icon.arrow width={16} height={16} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
               );
@@ -87,29 +98,37 @@ export default function HomePage() {
       </section>
 
       {/* HP-3: Choose Your Ride */}
-      <section className="section">
-        <div className="container">
-          <div className="section-head reveal">
-            <span className="eyebrow">Services</span>
-            <h2 className="display">CHOOSE YOUR RIDE</h2>
-            <p className="dim">Tailored mobility options engineered for every Sydney travel requirement.</p>
+      <section className="py-16 sm:py-24 relative">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
+          <div className="max-w-xl mb-12 reveal">
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+              Services
+            </span>
+            <h2 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">CHOOSE YOUR RIDE</h2>
+            <p className="text-zinc-400 text-base sm:text-lg">Tailored mobility options engineered for every Sydney travel requirement.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {RIDE_TYPES.map((rt) => (
-              <Link key={rt.slug} href={rt.href} className="card card-hover reveal flex flex-col justify-between p-6">
+              <Link
+                key={rt.slug}
+                href={rt.href}
+                className="reveal flex flex-col justify-between p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-[#111624] to-[#0a0d16] hover:-translate-y-1.5 hover:border-amber-400/50 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.25)] transition-all duration-300 group"
+              >
                 <div>
-                  <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl bg-[var(--ink-800)]">
-                    <Image src={rt.image} alt={rt.title} fill className="object-cover" />
+                  <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl bg-white/5">
+                    <Image src={rt.image} alt={rt.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <h3 className="display text-xl">{rt.title}</h3>
-                    <span className="pill">{rt.pax} pax</span>
+                    <h3 className="font-display font-semibold text-white text-xl">{rt.title}</h3>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-zinc-300 border border-white/10 bg-white/5">
+                      {rt.pax} pax
+                    </span>
                   </div>
-                  <p className="mute mt-2 text-sm">{rt.desc}</p>
+                  <p className="text-zinc-400 mt-2 text-sm leading-relaxed">{rt.desc}</p>
                 </div>
-                <div className="mt-6 flex items-center justify-between border-t border-[var(--line)] pt-4 text-xs font-semibold">
-                  <span className="dim">Luggage capacity: {rt.luggage} bags</span>
-                  <span className="flex items-center gap-1" style={{ color: "var(--gold-300)" }}>
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-xs font-semibold">
+                  <span className="text-zinc-400">Luggage capacity: {rt.luggage} bags</span>
+                  <span className="flex items-center gap-1 text-amber-300 group-hover:translate-x-0.5 transition-transform">
                     Details <Icon.arrow width={14} height={14} />
                   </span>
                 </div>
@@ -120,19 +139,23 @@ export default function HomePage() {
       </section>
 
       {/* HP-4: How It Works */}
-      <section className="section bg-[var(--ink-900)]">
-        <div className="container">
-          <div className="section-head reveal">
-            <span className="eyebrow">Simplicity</span>
-            <h2 className="display">HOW IT WORKS</h2>
-            <p className="dim">Fast on-demand taxi requests or pre-planned chauffeur bookings in 6 simple steps.</p>
+      <section className="py-16 sm:py-24 relative bg-[#080a11]">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
+          <div className="max-w-xl mb-12 reveal">
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+              Simplicity
+            </span>
+            <h2 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">HOW IT WORKS</h2>
+            <p className="text-zinc-400 text-base sm:text-lg">Fast on-demand taxi requests or pre-planned chauffeur bookings in 6 simple steps.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {HOW_IT_WORKS.map((hw) => (
-              <div key={hw.step} className="card reveal p-6">
-                <span className="step-num">{hw.step}</span>
-                <h3 className="display mt-4 text-xl">{hw.title}</h3>
-                <p className="mute mt-2 text-sm">{hw.desc}</p>
+              <div key={hw.step} className="reveal p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-[#111624] to-[#0a0d16]">
+                <span className="font-display text-4xl sm:text-5xl font-bold leading-none text-transparent [-webkit-text-stroke:1px_rgba(251,191,36,0.6)]">
+                  {hw.step}
+                </span>
+                <h3 className="font-display font-semibold text-white mt-4 text-xl tracking-tight">{hw.title}</h3>
+                <p className="text-zinc-400 mt-2 text-sm leading-relaxed">{hw.desc}</p>
               </div>
             ))}
           </div>
@@ -140,29 +163,38 @@ export default function HomePage() {
       </section>
 
       {/* HP-5: Fleet Preview */}
-      <section className="section">
-        <div className="container">
-          <div className="section-head reveal">
-            <span className="eyebrow">Fleet</span>
-            <h2 className="display">OUR LUXURY FLEET</h2>
-            <p className="dim">Meticulously maintained, late-model vehicles driven by professional chauffeurs.</p>
+      <section className="py-16 sm:py-24 relative">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
+          <div className="max-w-xl mb-12 reveal">
+            <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+              Fleet
+            </span>
+            <h2 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">OUR LUXURY FLEET</h2>
+            <p className="text-zinc-400 text-base sm:text-lg">Meticulously maintained, late-model vehicles driven by professional chauffeurs.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FLEET_PREVIEW.map((fl) => (
-              <div key={fl.category} className="card card-hover reveal p-6">
-                <div className="relative mb-4 h-44 w-full overflow-hidden rounded-xl bg-[var(--ink-850)]">
-                  <Image src={fl.image} alt={fl.category} fill className="object-cover" />
+              <div key={fl.category} className="reveal p-6 rounded-2xl border border-white/10 bg-gradient-to-b from-[#111624] to-[#0a0d16] hover:-translate-y-1.5 hover:border-amber-400/50 hover:shadow-[0_20px_40px_-15px_rgba(251,191,36,0.25)] transition-all duration-300 group">
+                <div className="relative mb-4 h-44 w-full overflow-hidden rounded-xl bg-white/5">
+                  <Image src={fl.image} alt={fl.category} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <h3 className="display text-xl">{fl.category}</h3>
+                  <h3 className="font-display font-semibold text-white text-xl">{fl.category}</h3>
                   <div className="flex gap-2">
-                    <span className="pill">{fl.pax} pax</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-zinc-300 border border-white/10 bg-white/5">
+                      {fl.pax} pax
+                    </span>
                   </div>
                 </div>
-                <p className="mute mt-2 text-sm">{fl.desc}</p>
-                <div className="mt-6 flex items-center justify-between border-t border-[var(--line)] pt-4">
-                  <span className="text-xs text-[var(--text-mute)]">{fl.luggage} Luggage Capacity</span>
-                  <Link href={fl.href} className="btn btn-ghost btn-sm">View details</Link>
+                <p className="text-zinc-400 mt-2 text-sm leading-relaxed">{fl.desc}</p>
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
+                  <span className="text-xs text-zinc-400">{fl.luggage} Luggage Capacity</span>
+                  <Link
+                    href={fl.href}
+                    className="inline-flex items-center justify-center h-[34px] px-3.5 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-amber-400/10 hover:border-amber-400/40 hover:text-white transition-all"
+                  >
+                    View details
+                  </Link>
                 </div>
               </div>
             ))}
@@ -171,28 +203,40 @@ export default function HomePage() {
       </section>
 
       {/* HP-6: Trust & Extras */}
-      <section className="section bg-[var(--ink-900)]" id="corporate">
-        <div className="container">
-          <div className="glass reveal grid gap-8 p-8 md:grid-cols-2 lg:items-center">
+      <section className="py-16 sm:py-24 relative bg-[#080a11]" id="corporate">
+        <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
+          <div className="reveal grid gap-8 p-8 md:grid-cols-2 lg:items-center rounded-3xl border border-white/10 bg-[#0e121d]/90 backdrop-blur-2xl shadow-2xl">
             <div>
-              <span className="eyebrow">Enterprise</span>
-              <h2 className="display mt-2 text-3xl sm:text-4xl">CORPORATE & BUSINESS TRAVEL</h2>
-              <p className="dim mt-4">
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+                Enterprise
+              </span>
+              <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight text-white mt-2">CORPORATE & BUSINESS TRAVEL</h2>
+              <p className="text-zinc-300 mt-4 leading-relaxed">
                 Streamline mobility for your executives, clients and guests. One portal, multiple users, flexible credit limits and automated monthly invoicing.
               </p>
-              <ul className="mt-6 space-y-3 text-sm">
-                <li className="flex items-center gap-3"><Icon.check style={{ color: "var(--gold-400)" }} /> Dedicated Account Manager & 24/7 Priority Support</li>
-                <li className="flex items-center gap-3"><Icon.check style={{ color: "var(--gold-400)" }} /> Consolidated Monthly Statements & Tax Invoices</li>
-                <li className="flex items-center gap-3"><Icon.check style={{ color: "var(--gold-400)" }} /> Customized Booking Policies & Employee Access Control</li>
+              <ul className="mt-6 space-y-3 text-sm text-zinc-300">
+                <li className="flex items-center gap-3"><Icon.check className="text-amber-400 shrink-0" /> Dedicated Account Manager & 24/7 Priority Support</li>
+                <li className="flex items-center gap-3"><Icon.check className="text-amber-400 shrink-0" /> Consolidated Monthly Statements & Tax Invoices</li>
+                <li className="flex items-center gap-3"><Icon.check className="text-amber-400 shrink-0" /> Customized Booking Policies & Employee Access Control</li>
               </ul>
               <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/book/chauffeur" className="btn btn-gold">Open Corporate Account</Link>
-                <a href={`tel:${SITE.phone.replace(/\s/g, "")}`} className="btn btn-ghost">Contact Corporate Team</a>
+                <Link
+                  href="/book/chauffeur"
+                  className="inline-flex items-center justify-center h-12 px-6 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg transition active:scale-95"
+                >
+                  Open Corporate Account
+                </Link>
+                <a
+                  href={`tel:${SITE.phone.replace(/\s/g, "")}`}
+                  className="inline-flex items-center justify-center h-12 px-6 rounded-full font-semibold text-sm text-white/90 border border-white/15 bg-white/[0.03] hover:bg-white/10 transition active:scale-95"
+                >
+                  Contact Corporate Team
+                </a>
               </div>
             </div>
-            <div className="relative h-72 overflow-hidden rounded-2xl md:h-full">
+            <div className="relative h-72 overflow-hidden rounded-2xl md:h-full min-h-[300px]">
               <Image src="/hero.png" alt="Corporate Transfer" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--ink-950)] via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#07090e] via-transparent to-transparent" />
             </div>
           </div>
         </div>

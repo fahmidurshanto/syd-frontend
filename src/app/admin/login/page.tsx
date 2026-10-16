@@ -89,21 +89,18 @@ export default function AdminLoginPage() {
     >
       <div className="absolute inset-0 bg-radial-glow pointer-events-none opacity-40" />
 
-      <div className="glass max-w-md w-full p-8 sm:p-10 relative z-10 border border-white/10 shadow-2xl rounded-2xl">
+      <div className="max-w-md w-full p-8 sm:p-10 relative z-10 border border-white/10 shadow-2xl rounded-2xl bg-[#0e121d]/90 backdrop-blur-2xl">
         {/* Brand Icon */}
         <div className="flex justify-center mb-6">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
-            style={{
-              background: "linear-gradient(135deg, var(--gold-300), var(--gold-600))",
-            }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-br from-amber-300 via-amber-400 to-amber-600"
           >
             <svg
               width="28"
               height="28"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--ink-950)"
+              stroke="#05070c"
               strokeWidth="2.2"
               strokeLinecap="round"
             >
@@ -114,9 +111,11 @@ export default function AdminLoginPage() {
 
         {/* Portal Header */}
         <div className="text-center mb-8">
-          <span className="eyebrow justify-center mb-2">SYD OPS PORTAL</span>
-          <h1 className="display text-2xl text-white">Fleet & Bookings Admin</h1>
-          <p className="mute text-xs mt-1">Authorized personnel and operations staff only</p>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center justify-center gap-2 mb-2">
+            SYD OPS PORTAL
+          </span>
+          <h1 className="font-display text-2xl font-bold text-white tracking-tight">Fleet & Bookings Admin</h1>
+          <p className="text-zinc-400 text-xs mt-1">Authorized personnel and operations staff only</p>
         </div>
 
         {/* Error Alert */}
@@ -229,7 +228,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full btn btn-gold py-3 justify-center text-sm font-semibold tracking-wide uppercase transition hover:brightness-110 mt-2"
+            className="w-full inline-flex items-center justify-center h-12 rounded-full text-sm font-semibold tracking-wide uppercase text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg transition active:scale-95 disabled:opacity-50 mt-2"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
