@@ -549,3 +549,62 @@ export async function getAdminMeApi(): Promise<{ success: boolean; admin: AdminU
   return api<{ success: boolean; admin: AdminUser }>("/admins/me");
 }
 
+export type DriverRecord = {
+  _id: string;
+  driverNumber?: string;
+  name: string;
+  phone: string;
+  email?: string;
+  licenseNumber?: string;
+  vehicleModel?: string;
+  vehiclePlate?: string;
+  vehicleType?: "taxi" | "airport" | "chauffeur" | "executive" | "suv" | "van" | string;
+  service?: "taxi" | "airport" | "chauffeur" | "all" | string;
+  status: "active" | "on_trip" | "offline" | "suspended" | string;
+  rating?: number;
+  totalTrips?: number;
+  location?: {
+    name?: string;
+    lat?: number;
+    lng?: number;
+  };
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function getAdminDriversApi(params?: {
+  status?: string;
+  service?: string;
+  search?: string;
+  limit?: number;
+}): Promise<{ total: number; drivers: DriverRecord[] }> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.status && params.status !== "all") qs.set("status", params.status);
+    if (params?.service && params.service !== "all") qs.set("service", params.service);
+    if (params?.search) qs.set("search", params.search);
+    if (params?.limit) qs.set("limit", String(params.limit));
+
+    const endpoint = `/admins/drivers${qs.toString() ? `?${qs.toString()}` : ""}`;
+    const res = await api<{ success: boolean; total?: number; drivers?: DriverRecord[]; data?: DriverRecord[] }>(endpoint);
+
+    const list: DriverRecord[] = Array.isArray(res.drivers)
+      ? res.drivers
+      : Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res)
+      ? (res as unknown as DriverRecord[])
+      : [];
+
+    return {
+      total: typeof res.total === "number" ? res.total : list.length,
+      drivers: list,
+    };
+  } catch (err) {
+    console.error("Failed to fetch drivers:", err);
+    return { total: 0, drivers: [] };
+  }
+}
+
+
