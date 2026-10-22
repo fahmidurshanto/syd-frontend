@@ -10,8 +10,8 @@ const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"], weight: [
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: `${SITE.name} — Sydney Airport Transfers, Taxi & Chauffeur`, template: `%s · ${SITE.name}` },
-  description: "Book premium Sydney airport transfers, taxis and chauffeur cars. Fixed prices, flight tracking, meet & greet and live driver tracking. 24/7 across Greater Sydney.",
+  title: { default: `${SITE.name} — Premium Taxi & Limousine Services`, template: `%s · ${SITE.name}` },
+  description: "Book premium Sydney Airport transfers, taxis and luxury limousine vehicle services. Fixed prices, flight tracking, meet & greet and live driver tracking 24/7.",
   openGraph: { type: "website", locale: "en_AU", siteName: SITE.name, images: ["/hero.png"] },
 };
 

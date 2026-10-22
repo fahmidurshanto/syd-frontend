@@ -277,9 +277,20 @@ export const money = (cents: number | null | undefined) => (cents == null ? "—
 export const sydneyTime = (iso: string | Date) =>
   new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
-export const SERVICE_LABEL: Record<Service, string> = { taxi: "Taxi", airport: "Airport Transfer", chauffeur: "Chauffeur" };
+export const SERVICE_LABEL: Record<Service, string> = { taxi: "Taxi Service", airport: "Airport Transfer", chauffeur: "Limousine Service" };
 
-export type BookingStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" | "CANCELLED" | "CONFIRMED" | "PENDING";
+export type BookingStatus =
+  | "pending"
+  | "confirmed"
+  | "assigned"
+  | "on_the_way"
+  | "arrived"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "CANCELLED"
+  | "CONFIRMED"
+  | "PENDING";
 
 export type BookingRecord = {
   _id: string;
@@ -604,6 +615,145 @@ export async function getAdminDriversApi(params?: {
   } catch (err) {
     console.error("Failed to fetch drivers:", err);
     return { total: 0, drivers: [] };
+  }
+}
+
+// Driver Portal Client APIs
+export async function driverRegisterApi(payload: any) {
+  return api<{ success: boolean; message: string; driver: any }>("/drivers/register", {
+    json: payload,
+  });
+}
+
+export async function driverLoginApi(payload: { email: string; password: string }) {
+  return api<{ success: boolean; message: string; token: string; driver: any }>("/drivers/login", {
+    json: payload,
+  });
+}
+
+export async function driverGetMeApi(token: string) {
+  return api<any>("/drivers/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function driverUpdateStatusApi(token: string, payload: { isOnline: boolean; lat?: number; lng?: number }) {
+  return api<{ success: boolean; isOnline: boolean; status: string }>("/drivers/status", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    json: payload,
+  });
+}
+
+export async function driverGetTripsApi(token: string) {
+  return api<{
+    success: boolean;
+    currentTrips: BookingRecord[];
+    availableJobs: BookingRecord[];
+    pastTrips: BookingRecord[];
+  }>("/drivers/trips", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function driverAcceptTripApi(token: string, bookingId: string) {
+  return api<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/accept`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function driverUpdateTripStatusApi(
+  token: string,
+  bookingId: string,
+  status: "on_the_way" | "arrived" | "in_progress" | "completed"
+) {
+  return api<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    json: { status },
+  });
+}
+
+export type OnlineDriverInfo = {
+  id: string;
+  name: string;
+  vehicleModel: string;
+  vehicleColor?: string;
+  serviceType: string;
+  rating: number;
+  status: string;
+  location?: { lat: number; lng: number };
+};
+
+export async function getOnlineDriversApi(service?: string): Promise<{ count: number; drivers: OnlineDriverInfo[] }> {
+  try {
+    // Map frontend service to backend vehicle.serviceType
+    let targetService = service;
+    if (service === "chauffeur") targetService = "limousine";
+    const qs = targetService && targetService !== "all" ? `?service=${encodeURIComponent(targetService)}` : "";
+    const res = await api<{ success: boolean; count: number; drivers: OnlineDriverInfo[] }>(`/drivers/online${qs}`);
+    return {
+      count: res.count ?? res.drivers?.length ?? 0,
+      drivers: res.drivers || [],
+    };
+  } catch (err) {
+    console.error("Failed to fetch online drivers:", err);
+    return { count: 0, drivers: [] };
+  }
+}
+
+/**
+ * Real-time SSE subscription: instantly delivers driver status changes (online/offline)
+ */
+export function streamOnlineDriversEvents(
+  service: string,
+  onUpdate: (data: { count: number; drivers: OnlineDriverInfo[] }) => void
+): () => void {
+  if (typeof window === "undefined" || !("EventSource" in window)) {
+    return () => {};
+  }
+
+  let targetService = service;
+  if (service === "chauffeur") targetService = "limousine";
+  const qs = targetService && targetService !== "all" ? `?service=${encodeURIComponent(targetService)}` : "";
+  const sseUrl = `${BASE}/drivers/online-stream${qs}`;
+
+  try {
+    const es = new EventSource(sseUrl, { withCredentials: true });
+
+    const handlePayload = (raw: string) => {
+      try {
+        const payload = JSON.parse(raw);
+        if (payload?.success) {
+          onUpdate({
+            count: payload.count ?? payload.drivers?.length ?? 0,
+            drivers: payload.drivers || [],
+          });
+        }
+      } catch (err) {
+        console.error("Failed parsing SSE driver event:", err);
+      }
+    };
+
+    es.addEventListener("online_drivers", (e: MessageEvent) => {
+      handlePayload(e.data);
+    });
+
+    es.onmessage = (e: MessageEvent) => {
+      handlePayload(e.data);
+    };
+
+    es.onerror = () => {
+      // EventSource auto-reconnects on error
+    };
+
+    return () => {
+      es.close();
+    };
+  } catch (err) {
+    console.error("SSE connection error:", err);
+    return () => {};
   }
 }
 

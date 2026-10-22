@@ -246,7 +246,7 @@ function BookingForm({ service }: { service: Service }) {
 }
 
 export function BookingPage({ service }: { service: Service }) {
-  const titles: Record<Service, string> = { taxi: "TAXI BOOKING", airport: "AIRPORT TRANSFER", chauffeur: "LUXURY CHAUFFEUR" };
+  const titles: Record<Service, string> = { taxi: "TAXI SERVICE BOOKING", airport: "AIRPORT TAXI & LIMOUSINE", chauffeur: "LUXURY LIMOUSINE SERVICE" };
   return (
     <div className="py-20 sm:py-28 pt-32 relative">
       <div className="w-[min(1240px,100%-2.5rem)] mx-auto">

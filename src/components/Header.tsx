@@ -7,10 +7,7 @@ import { SITE } from "@/lib/site";
 
 const NAV = [
   { href: "/book/taxi", label: "Taxi" },
-  { href: "/book/chauffeur", label: "Chauffeur" },
-  { href: "/#corporate", label: "Corporate" },
-  { href: "/fleet", label: "Fleet" },
-  { href: "/#locations", label: "Locations" },
+  { href: "/book/chauffeur", label: "Limousine" },
 ];
 
 export function Header() {
@@ -60,6 +57,13 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <Link
+            href="/driver/dashboard"
+            className="hidden sm:inline-flex items-center justify-center h-[38px] px-3.5 rounded-full text-xs font-semibold text-amber-300 border border-amber-400/30 bg-amber-400/10 hover:bg-amber-400/20 backdrop-blur-md transition-all active:scale-95"
+            id="header-driver-portal"
+          >
+            Driver Portal
+          </Link>
+          <Link
             href="/admin/login"
             className="hidden sm:inline-flex items-center justify-center h-[38px] px-3.5 rounded-full text-xs font-semibold text-white/90 border border-white/15 bg-white/[0.03] hover:bg-amber-400/10 hover:border-amber-400/40 hover:text-white backdrop-blur-md transition-all active:scale-95"
             id="header-login"
@@ -68,7 +72,7 @@ export function Header() {
           </Link>
           <Link
             href="/book/taxi"
-            className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-semibold text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-[0_4px_20px_-4px_rgba(251,191,36,0.5)] transition-all active:scale-95"
+            className="inline-flex items-center justify-center h-[38px] px-4 rounded-full text-xs font-bold text-black !text-black bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-[0_4px_20px_-4px_rgba(251,191,36,0.5)] transition-all active:scale-95"
             id="header-book-now"
           >
             Book now
@@ -88,7 +92,11 @@ export function Header() {
       {open && (
         <div className="fixed inset-x-0 bottom-0 top-[72px] lg:hidden bg-[#07090e] border-t border-white/10 z-50">
           <nav className="w-[min(1240px,100%-2.5rem)] mx-auto flex flex-col gap-1 py-6" aria-label="Mobile">
-            {[...NAV, { href: "/login", label: "Log in" }].map((n, i) => (
+            {[
+              ...NAV,
+              { href: "/driver/dashboard", label: "Driver Portal" },
+              { href: "/admin/login", label: "Admin Portal" },
+            ].map((n, i) => (
               <Link
                 key={n.href}
                 href={n.href}

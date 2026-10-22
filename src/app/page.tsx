@@ -5,19 +5,19 @@ import { Icon } from "@/components/Icon";
 import { SITE } from "@/lib/site";
 
 const QUICK_ACTIONS = [
-  { id: "taxi", title: "Taxi Now", desc: "Everyday affordable rides on demand", href: "/book/taxi", icon: "car" as const, badge: "On Demand" },
-  { id: "airport", title: "Airport Transfer", desc: "Pre-booked transfers with flight tracking", href: "/book/airport", icon: "plane" as const, badge: "Pre-book" },
-  { id: "chauffeur", title: "Chauffeur", desc: "Executive, luxury & VIP hourly hire", href: "/book/chauffeur", icon: "crown" as const, badge: "Premium" },
-  { id: "corporate", title: "Corporate", desc: "Centralized account & monthly invoicing", href: "/#corporate", icon: "briefcase" as const, badge: "B2B" },
+  { id: "taxi", title: "Taxi Service", desc: "Everyday & maxi taxis on demand or scheduled", href: "/book/taxi", icon: "car" as const, badge: "On Demand" },
+  { id: "chauffeur", title: "Limousine Service", desc: "Executive sedans & luxury stretch limos", href: "/book/chauffeur", icon: "crown" as const, badge: "Luxury" },
+  { id: "airport", title: "Airport Transfer", desc: "Dedicated taxi & limo transfers with flight tracking", href: "/book/airport", icon: "plane" as const, badge: "Pre-book" },
+  { id: "corporate", title: "Corporate Limo", desc: "Executive business accounts & monthly billing", href: "/#corporate", icon: "briefcase" as const, badge: "B2B" },
 ];
 
 const RIDE_TYPES = [
-  { slug: "taxi", title: "Taxi", desc: "Affordable everyday rides across Sydney", pax: "1-4", luggage: "2", image: "/fleet/taxi.png", href: "/book/taxi" },
-  { slug: "airport", title: "Airport Transfer", desc: "Pre-booked pickup with flight tracking & meet and greet", pax: "1-14", luggage: "14", image: "/fleet/luxury.png", href: "/book/airport" },
-  { slug: "executive", title: "Executive", desc: "Business transportation in premium sedans", pax: "1-4", luggage: "3", image: "/fleet/sedan.png", href: "/book/chauffeur" },
-  { slug: "luxury", title: "Luxury Chauffeur", desc: "First-class travel in luxury vehicles", pax: "1-3", luggage: "3", image: "/fleet/luxury.png", href: "/book/chauffeur" },
-  { slug: "group", title: "Group Transfer", desc: "People movers & vans for families or teams", pax: "1-14", luggage: "14", image: "/fleet/suv.png", href: "/book/chauffeur" },
-  { slug: "intercity", title: "Intercity", desc: "City-to-regional travel (Newcastle, Wollongong, etc.)", pax: "1-14", luggage: "14", image: "/fleet/van.png", href: "/book/chauffeur" },
+  { slug: "taxi", title: "Standard & Maxi Taxi", desc: "Reliable metered and fixed-fare taxis across Sydney", pax: "1-11", luggage: "8", image: "/fleet/taxi.png", href: "/book/taxi" },
+  { slug: "executive", title: "Executive Limousine", desc: "Premium sedan service for business and VIP travel", pax: "1-4", luggage: "3", image: "/fleet/sedan.png", href: "/book/chauffeur" },
+  { slug: "luxury", title: "Luxury Limousine", desc: "First-class luxury limousine service with professional chauffeur", pax: "1-4", luggage: "4", image: "/fleet/luxury.png", href: "/book/chauffeur" },
+  { slug: "group", title: "SUV & People Mover", desc: "Spacious luxury SUVs and executive vans for group travel", pax: "1-7", luggage: "6", image: "/fleet/suv.png", href: "/book/chauffeur" },
+  { slug: "airport", title: "Airport Taxi & Limo", desc: "Door-to-terminal pickup with meet and greet service", pax: "1-14", luggage: "14", image: "/fleet/luxury.png", href: "/book/airport" },
+  { slug: "intercity", title: "Long Distance & Tours", desc: "Regional private transfers across New South Wales", pax: "1-14", luggage: "14", image: "/fleet/van.png", href: "/book/chauffeur" },
 ];
 
 const HOW_IT_WORKS = [
@@ -30,12 +30,12 @@ const HOW_IT_WORKS = [
 ];
 
 const FLEET_PREVIEW = [
-  { category: "Taxi", pax: "1-4", luggage: 2, image: "/fleet/taxi.png", desc: "Toyota Camry Hybrid or equivalent", href: "/fleet" },
-  { category: "Sedan", pax: "1-4", luggage: 3, image: "/fleet/sedan.png", desc: "Mercedes-Benz E-Class, BMW 5 Series", href: "/fleet" },
-  { category: "Luxury Sedan", pax: "1-3", luggage: 3, image: "/fleet/luxury.png", desc: "Mercedes-Benz S-Class, BMW 7 Series", href: "/fleet" },
-  { category: "SUV", pax: "1-6", luggage: 5, image: "/fleet/suv.png", desc: "Audi Q7, Mercedes GLE", href: "/fleet" },
-  { category: "MPV", pax: "1-7", luggage: 6, image: "/fleet/mpv.png", desc: "Mercedes V-Class, Kia Carnival", href: "/fleet" },
-  { category: "Van / Minibus", pax: "8-14", luggage: 14, image: "/fleet/van.png", desc: "Mercedes Sprinter Executive", href: "/fleet" },
+  { category: "Standard & Maxi Taxi", pax: "1-11", luggage: 8, image: "/fleet/taxi.png", desc: "Toyota Camry Hybrid, HiAce Maxi Taxi", href: "/fleet" },
+  { category: "Executive Sedan", pax: "1-4", luggage: 3, image: "/fleet/sedan.png", desc: "Mercedes-Benz E-Class, BMW 5 Series, Lexus ES", href: "/fleet" },
+  { category: "Luxury Limousine", pax: "1-4", luggage: 4, image: "/fleet/luxury.png", desc: "Mercedes-Benz S-Class, BMW 7 Series, Audi A8", href: "/fleet" },
+  { category: "Premium SUV", pax: "1-6", luggage: 5, image: "/fleet/suv.png", desc: "Audi Q7, Mercedes GLE, Lexus RX", href: "/fleet" },
+  { category: "Executive MPV / Van", pax: "1-7", luggage: 6, image: "/fleet/mpv.png", desc: "Mercedes V-Class, Luxury People Mover", href: "/fleet" },
+  { category: "Minibus / Coach", pax: "8-14", luggage: 14, image: "/fleet/van.png", desc: "Mercedes Sprinter Executive", href: "/fleet" },
 ];
 
 export default function HomePage() {
@@ -57,7 +57,7 @@ export default function HomePage() {
               MOVE WITH <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent">CONFIDENCE</span>.
             </h1>
             <p className="text-zinc-300 fade-up mb-8 text-lg sm:text-xl leading-relaxed" style={{ animationDelay: "220ms" }}>
-              Premium taxi, Sydney airport transfer, luxury chauffeur & corporate mobility. Fixed rates, verified drivers, 24/7 reliability.
+              Sydney's trusted taxi & luxury limousine service. On-demand rides, executive sedans, stretch limousines & reliable airport transfers at transparent fixed rates.
             </p>
           </div>
           <HeroBookingForm />

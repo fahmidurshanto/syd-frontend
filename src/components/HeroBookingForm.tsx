@@ -9,6 +9,9 @@ import {
   lookupRouteFareApi,
   getPopularRoutesApi,
   getConnectedPlacesApi,
+  getOnlineDriversApi,
+  streamOnlineDriversEvents,
+  type OnlineDriverInfo,
   normalizePlace,
 } from "@/lib/api";
 import { PlaceInput } from "./PlaceInput";
@@ -38,7 +41,31 @@ export function HeroBookingForm() {
   // Popular routes catalog from routes.controller.ts GET /routes
   const [popularRoutes, setPopularRoutes] = useState<PlaceRoute[]>([]);
 
+  // Online drivers data
+  const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [onlineDrivers, setOnlineDrivers] = useState<OnlineDriverInfo[]>([]);
+  const [showDriverList, setShowDriverList] = useState(false);
+
   const isNow = service === "taxi" && now;
+
+  // Real-time Driver Online/Offline stream listener (Zero-latency instant updates)
+  useEffect(() => {
+    // Initial fetch
+    getOnlineDriversApi(service).then((res) => {
+      setOnlineCount(res.count);
+      setOnlineDrivers(res.drivers);
+    });
+
+    // Subscribe to live Server-Sent Events stream
+    const unsubscribe = streamOnlineDriversEvents(service, (data) => {
+      setOnlineCount(data.count);
+      setOnlineDrivers(data.drivers);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [service]);
 
   // Load popular predefined routes on component mount
   useEffect(() => {
@@ -200,14 +227,73 @@ export function HeroBookingForm() {
                   : "text-zinc-400 hover:text-white"
               }`}
             >
-              {s === "taxi" ? "Taxi" : "Chauffeur"}
+              {s === "taxi" ? "Taxi" : "Limousine"}
             </button>
           ))}
         </div>
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-          Drivers online now
-        </span>
+
+        {/* Live Online Drivers Indicator */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowDriverList((v) => !v)}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition cursor-pointer"
+            title="Click to view online fleet"
+            id="hero-online-drivers-badge"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>
+              <strong className="font-bold text-white">{onlineCount}</strong>{" "}
+              {onlineCount === 1 ? "driver" : "drivers"} online now
+            </span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className={`transition-transform duration-200 ${showDriverList ? "rotate-180" : ""}`}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {/* Quick Dropdown: Active Online Drivers */}
+          {showDriverList && (
+            <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-white/10 bg-[#0e1320] p-3 shadow-2xl z-50 backdrop-blur-xl">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs">
+                <span className="font-semibold text-white">Active {service === "taxi" ? "Taxis" : "Limousines"}</span>
+                <span className="text-emerald-400 font-mono text-[11px]">Ready for pickup</span>
+              </div>
+              {onlineDrivers.length === 0 ? (
+                <p className="text-xs text-zinc-400 py-3 text-center">
+                  No drivers currently online for {service === "taxi" ? "Taxi" : "Limousine"}. Pre-book is available 24/7!
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {onlineDrivers.map((d) => (
+                    <div
+                      key={d.id}
+                      className="p-2.5 rounded-xl border border-white/5 bg-white/[0.02] flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <p className="font-semibold text-white flex items-center gap-1.5">
+                          <span>{d.name}</span>
+                          <span className="text-[10px] text-emerald-400">★ {d.rating?.toFixed(1) || "5.0"}</span>
+                        </p>
+                        <p className="text-[11px] text-zinc-400">{d.vehicleModel}</p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/20 capitalize">
+                        {d.serviceType}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1.2fr_1.2fr_1fr_0.7fr_auto] lg:items-end">

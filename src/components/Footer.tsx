@@ -16,7 +16,7 @@ export function Footer() {
       <div className="w-[min(1240px,100%-2.5rem)] mx-auto grid gap-10 py-16 md:grid-cols-[1.3fr_repeat(3,1fr)] lg:grid-cols-[1.6fr_repeat(6,1fr)]">
         <div>
           <p className="font-display font-semibold text-xl tracking-tight text-white">{SITE.name}<span className="text-amber-400">.</span></p>
-          <p className="text-zinc-400 mt-3 max-w-xs text-sm leading-relaxed">Premium taxi, airport transfers and chauffeur service across Greater Sydney. Available 24/7.</p>
+          <p className="text-zinc-400 mt-3 max-w-xs text-sm leading-relaxed">Premier on-demand taxi, luxury limousine and corporate vehicle services across Greater Sydney. Available 24/7.</p>
           <a href={`tel:${SITE.phone.replace(/\s/g, "")}`} className="mt-5 inline-block text-sm font-medium text-amber-300 hover:text-amber-200 transition-colors">{SITE.phone}</a>
         </div>
         {COLS.map((c) => (

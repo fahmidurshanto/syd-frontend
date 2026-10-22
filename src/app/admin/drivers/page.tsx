@@ -69,10 +69,15 @@ export default function AdminDriversPage() {
     fetchDrivers();
   };
 
-  const handleUpdateStatus = (newStatus: string) => {
+  const handleUpdateStatus = async (newStatus: string) => {
     if (!selectedDriver) return;
     setActionLoading(true);
-    setTimeout(() => {
+    try {
+      const { api } = await import("@/lib/api");
+      await api(`/admins/drivers/${selectedDriver._id}/status`, {
+        method: "PATCH",
+        json: { status: newStatus, notes: driverNotes || selectedDriver.notes },
+      });
       const updated: DriverRecord = {
         ...selectedDriver,
         status: newStatus as any,
@@ -82,8 +87,11 @@ export default function AdminDriversPage() {
       setDrivers((prev) =>
         prev.map((d) => (d._id === updated._id ? updated : d))
       );
+    } catch (err: any) {
+      console.error("Failed to update driver status:", err);
+    } finally {
       setActionLoading(false);
-    }, 300);
+    }
   };
 
   const filteredDrivers = drivers.filter((d) => {
