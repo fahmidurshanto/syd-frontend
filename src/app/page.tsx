@@ -5,19 +5,29 @@ import { Icon } from "@/components/Icon";
 import { SITE } from "@/lib/site";
 
 const QUICK_ACTIONS = [
-  { id: "taxi", title: "Taxi Service", desc: "Everyday & maxi taxis on demand or scheduled", href: "/book/taxi", icon: "car" as const, badge: "On Demand" },
-  { id: "chauffeur", title: "Limousine Service", desc: "Executive sedans & luxury stretch limos", href: "/book/chauffeur", icon: "crown" as const, badge: "Luxury" },
-  { id: "airport", title: "Airport Transfer", desc: "Dedicated taxi & limo transfers with flight tracking", href: "/book/airport", icon: "plane" as const, badge: "Pre-book" },
-  { id: "corporate", title: "Corporate Limo", desc: "Executive business accounts & monthly billing", href: "/#corporate", icon: "briefcase" as const, badge: "B2B" },
+  {
+    id: "taxi",
+    title: "Taxi Service",
+    desc: "Everyday sedans & spacious maxi taxis across Greater Sydney. Fast on-demand pickup or scheduled rides.",
+    href: "/book/taxi",
+    icon: "car" as const,
+    badge: "On Demand & Scheduled",
+  },
+  {
+    id: "chauffeur",
+    title: "Limousine & Chauffeur",
+    desc: "Premium executive sedans, luxury Mercedes/BMW, and chauffeur-driven VIP vehicles at transparent fixed rates.",
+    href: "/book/chauffeur",
+    icon: "crown" as const,
+    badge: "VIP Luxury",
+  },
 ];
 
 const RIDE_TYPES = [
-  { slug: "taxi", title: "Standard & Maxi Taxi", desc: "Reliable metered and fixed-fare taxis across Sydney", pax: "1-11", luggage: "8", image: "/fleet/taxi.png", href: "/book/taxi" },
-  { slug: "executive", title: "Executive Limousine", desc: "Premium sedan service for business and VIP travel", pax: "1-4", luggage: "3", image: "/fleet/sedan.png", href: "/book/chauffeur" },
-  { slug: "luxury", title: "Luxury Limousine", desc: "First-class luxury limousine service with professional chauffeur", pax: "1-4", luggage: "4", image: "/fleet/luxury.png", href: "/book/chauffeur" },
-  { slug: "group", title: "SUV & People Mover", desc: "Spacious luxury SUVs and executive vans for group travel", pax: "1-7", luggage: "6", image: "/fleet/suv.png", href: "/book/chauffeur" },
-  { slug: "airport", title: "Airport Taxi & Limo", desc: "Door-to-terminal pickup with meet and greet service", pax: "1-14", luggage: "14", image: "/fleet/luxury.png", href: "/book/airport" },
-  { slug: "intercity", title: "Long Distance & Tours", desc: "Regional private transfers across New South Wales", pax: "1-14", luggage: "14", image: "/fleet/van.png", href: "/book/chauffeur" },
+  { slug: "taxi", title: "Standard & Maxi Taxi", desc: "Reliable metered and fixed-fare taxis across Sydney with fast dispatch", pax: "1-11", luggage: "8", image: "/fleet/taxi.png", href: "/book/taxi" },
+  { slug: "executive", title: "Executive Limousine", desc: "Premium sedan service for business and VIP travel in Mercedes & BMW", pax: "1-4", luggage: "3", image: "/fleet/sedan.png", href: "/book/chauffeur" },
+  { slug: "luxury", title: "Luxury Chauffeur Limo", desc: "First-class luxury limousine service with professional uniformed chauffeur", pax: "1-4", luggage: "4", image: "/fleet/luxury.png", href: "/book/chauffeur" },
+  { slug: "group", title: "Luxury SUV & People Mover", desc: "Spacious luxury SUVs and executive vans for group travel & airport luggage", pax: "1-7", luggage: "6", image: "/fleet/suv.png", href: "/book/chauffeur" },
 ];
 
 const HOW_IT_WORKS = [
@@ -67,7 +77,7 @@ export default function HomePage() {
       {/* HP-2: Quick Action Cards */}
       <section className="py-16 sm:py-24 relative z-10 bg-[#080a11]">
         <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 max-w-4xl mx-auto">
             {QUICK_ACTIONS.map((qa) => {
               const I = Icon[qa.icon];
               return (

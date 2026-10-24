@@ -68,8 +68,8 @@ function BookingForm({ service }: { service: Service }) {
           quoteToken: selectedQuote.quoteToken,
           passengerName,
           passengerPhone,
-          flightNumber: service === "airport" ? flightNumber : undefined,
-          airportTripType: service === "airport" ? airportTripType : undefined,
+          flightNumber: flightNumber || undefined,
+          airportTripType: flightNumber ? airportTripType : undefined,
         },
       });
       setBookingResult({
@@ -130,7 +130,8 @@ function BookingForm({ service }: { service: Service }) {
             </div>
           </div>
 
-          {service === "airport" && (
+          {/* Show flight number and transfer type if either pickup or destination is airport */}
+          {((from?.name && /airport/i.test(from.name)) || (to?.name && /airport/i.test(to.name))) && (
             <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-white/10">
               <div className="relative flex flex-col gap-1.5 min-w-0">
                 <label htmlFor="book-flight-type" className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400">Transfer Type</label>
@@ -245,7 +246,11 @@ function BookingForm({ service }: { service: Service }) {
 }
 
 export function BookingPage({ service }: { service: Service }) {
-  const titles: Record<Service, string> = { taxi: "TAXI SERVICE BOOKING", airport: "AIRPORT TAXI & LIMOUSINE", chauffeur: "LUXURY LIMOUSINE SERVICE" };
+  const titles: Record<Service, string> = {
+    taxi: "TAXI SERVICE BOOKING",
+    airport: "AIRPORT & TRANSFER BOOKING",
+    chauffeur: "LIMOUSINE & CHAUFFEUR SERVICE",
+  };
   return (
     <div className="py-20 sm:py-28 pt-32 relative">
       <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
