@@ -129,21 +129,21 @@ export default function DriverDashboardPage() {
     <div className="min-h-screen bg-[#07090e] pt-28 pb-20 text-white">
       <div className="w-[min(1240px,100%-2.5rem)] mx-auto space-y-8">
         {/* Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl border border-white/10 bg-[#0c101a]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-5 sm:p-6 rounded-3xl border border-white/10 bg-[#0c101a]">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="font-display text-2xl sm:text-3xl font-bold">{driver.name}</h1>
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/30 uppercase">
                 {driver.vehicle?.serviceType || "Taxi"} Driver
               </span>
             </div>
-            <p className="text-zinc-400 text-sm mt-1">
+            <p className="text-zinc-400 text-xs sm:text-sm mt-1">
               Vehicle: {driver.vehicle?.make} {driver.vehicle?.model} • Plate:{" "}
               <span className="text-amber-400 font-mono font-semibold">{driver.vehicle?.regoPlate}</span>
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             {/* Online / Offline Button */}
             <button
               onClick={handleToggleOnline}
@@ -155,7 +155,7 @@ export default function DriverDashboardPage() {
                   ? "Your account is suspended"
                   : "Click to toggle online/offline"
               }
-              className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all flex items-center gap-2 ${
+              className={`flex-1 sm:flex-initial px-5 sm:px-6 py-2.5 rounded-full font-semibold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
                 isOnline
                   ? "bg-emerald-500 hover:bg-emerald-600 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                   : driver.status === "pending_verification"
@@ -173,7 +173,7 @@ export default function DriverDashboardPage() {
 
             <button
               onClick={handleSignOut}
-              className="text-xs px-4 py-2 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition"
+              className="text-xs px-4 py-2.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition shrink-0"
             >
               Sign out
             </button>
@@ -279,12 +279,12 @@ export default function DriverDashboardPage() {
                   </div>
 
                   {/* Trip Progression Buttons */}
-                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/10">
+                  <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-4 border-t border-white/10">
                     {trip.status === "assigned" && (
                       <button
                         onClick={() => handleUpdateStatus(trip._id, "on_the_way")}
                         disabled={actionId === trip._id}
-                        className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-amber-400 text-black hover:bg-amber-300 transition"
+                        className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs font-semibold bg-amber-400 text-black hover:bg-amber-300 transition text-center"
                       >
                         En Route to Pickup
                       </button>
@@ -293,7 +293,7 @@ export default function DriverDashboardPage() {
                       <button
                         onClick={() => handleUpdateStatus(trip._id, "arrived")}
                         disabled={actionId === trip._id}
-                        className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-blue-500 text-white hover:bg-blue-600 transition"
+                        className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs font-semibold bg-blue-500 text-white hover:bg-blue-600 transition text-center"
                       >
                         Arrived at Pickup
                       </button>
@@ -302,7 +302,7 @@ export default function DriverDashboardPage() {
                       <button
                         onClick={() => handleUpdateStatus(trip._id, "in_progress")}
                         disabled={actionId === trip._id}
-                        className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500 text-black hover:bg-emerald-400 transition"
+                        className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs font-semibold bg-emerald-500 text-black hover:bg-emerald-400 transition text-center"
                       >
                         Start Trip (Passenger Onboard)
                       </button>
@@ -311,7 +311,7 @@ export default function DriverDashboardPage() {
                       <button
                         onClick={() => handleUpdateStatus(trip._id, "completed")}
                         disabled={actionId === trip._id}
-                        className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-purple-500 text-white hover:bg-purple-600 transition"
+                        className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl text-xs font-semibold bg-purple-500 text-white hover:bg-purple-600 transition text-center"
                       >
                         Complete Trip & Collect Fare
                       </button>
@@ -323,7 +323,7 @@ export default function DriverDashboardPage() {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 transition"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 rounded-xl text-xs font-medium border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 transition text-center"
                     >
                       Open Google Maps Navigation
                     </a>
@@ -386,6 +386,103 @@ export default function DriverDashboardPage() {
                   >
                     {actionId === job._id ? "Accepting..." : "Accept Job"}
                   </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 3. Past Completed Trips */}
+        <div>
+          <h2 className="font-display font-bold text-xl mb-4 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-500" />
+              <span>Past Trips ({pastTrips.length})</span>
+            </div>
+            {pastTrips.length > 0 && (
+              <span className="text-xs font-mono font-medium text-zinc-400">
+                Completed & History
+              </span>
+            )}
+          </h2>
+
+          {pastTrips.length === 0 ? (
+            <div className="p-8 rounded-2xl border border-white/10 bg-[#0c101a] text-center text-zinc-400 text-sm">
+              No completed trips recorded yet. Once you complete a trip, its record will appear here.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pastTrips.map((trip) => (
+                <div
+                  key={trip._id}
+                  className="p-5 rounded-2xl border border-white/10 bg-[#0c101a] hover:border-white/20 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-white/10 text-amber-300 font-bold">
+                        #{trip.bookingNumber}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full ${
+                          trip.status === "completed"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                        }`}
+                      >
+                        {trip.status}
+                      </span>
+                      <span className="text-xs text-zinc-400">
+                        {new Date(trip.updatedAt || trip.createdAt || Date.now()).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-amber-400/10 text-amber-300 font-semibold border border-amber-400/20">
+                        {trip.service || "Taxi"}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold mt-0.5">●</span>
+                        <span className="text-zinc-400">From:</span>
+                        <span className="text-zinc-200 font-medium">
+                          {trip.pickup?.name || trip.pickup?.address || "Pickup"}
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-rose-400 font-bold mt-0.5">●</span>
+                        <span className="text-zinc-400">To:</span>
+                        <span className="text-zinc-200 font-medium">
+                          {trip.destination?.name || trip.destination?.address || "As Directed"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {trip.passenger && (
+                      <div className="text-[11px] text-zinc-400 flex items-center gap-2 pt-1">
+                        <span>Passenger: <strong className="text-zinc-300 font-medium">{trip.passenger.name}</strong></span>
+                        {trip.passenger.phone && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-zinc-400">{trip.passenger.phone}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-3 md:pt-0 border-white/5 shrink-0">
+                    <span className="text-base font-bold text-emerald-400">
+                      {money(trip.fare?.total)}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 capitalize">
+                      {trip.paymentStatus || "Paid"}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

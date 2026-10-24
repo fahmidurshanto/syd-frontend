@@ -5,8 +5,8 @@ const COLS = [
   { title: "Company", links: [["About", "/about"], ["Safety", "/safety"], ["Careers", "/careers"], ["Contact", "/contact"]] },
   { title: "Services", links: [["Taxi", "/book/taxi"], ["Airport Transfer", "/book/airport"], ["Chauffeur", "/book/chauffeur"], ["Corporate", "/#corporate"], ["Tours", "/tours"], ["Events", "/events"]] },
   { title: "Locations", links: [["Sydney CBD", "/locations/sydney"], ["Sydney Airport (SYD)", "/book/airport"], ["Parramatta", "/locations/parramatta"], ["Northern Beaches", "/locations/northern-beaches"]] },
-  { title: "Partners", links: [["Hotels", "/partners/hotels"], ["Travel Agents", "/partners/travel-agents"], ["Corporate", "/partners/corporate"], ["Become a Driver", "/drivers/become-a-driver"]] },
-  { title: "Support", links: [["FAQ", "/help/faq"], ["Cancellation", "/cancellation"], ["Refund", "/refund"], ["Lost & Found", "/lost-and-found"]] },
+  { title: "Partners", links: [["Driver Portal", "/driver/dashboard"], ["Become a Driver", "/driver/register"], ["Corporate", "/partners/corporate"], ["Hotels", "/partners/hotels"]] },
+  { title: "Passenger", links: [["My Trips & Account", "/passenger/dashboard"], ["Track Live Ride", "/track"], ["Passenger Login", "/passenger/login"], ["Support / FAQ", "/help/faq"]] },
   { title: "Legal", links: [["Terms", "/legal/terms"], ["Privacy", "/legal/privacy"], ["Driver Terms", "/legal/driver-terms"], ["Cookies", "/legal/cookies"]] },
 ];
 

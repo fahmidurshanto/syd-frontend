@@ -27,8 +27,26 @@ function BookingForm({ service }: { service: Service }) {
 
   const [passengerName, setPassengerName] = useState("");
   const [passengerPhone, setPassengerPhone] = useState("");
+  const [passengerEmail, setPassengerEmail] = useState("");
   const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    // If logged in as passenger, prefill contact info
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("passenger_info");
+        if (raw) {
+          const info = JSON.parse(raw);
+          if (info.name && !passengerName) setPassengerName(info.name);
+          if (info.phone && !passengerPhone) setPassengerPhone(info.phone);
+          if (info.email) setPassengerEmail(info.email);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   const getQuote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +86,7 @@ function BookingForm({ service }: { service: Service }) {
           quoteToken: selectedQuote.quoteToken,
           passengerName,
           passengerPhone,
+          passengerEmail: passengerEmail || undefined,
           flightNumber: flightNumber || undefined,
           airportTripType: flightNumber ? airportTripType : undefined,
         },
@@ -186,19 +205,19 @@ function BookingForm({ service }: { service: Service }) {
                 <div
                   key={opt.category.slug}
                   onClick={() => setSelectedQuote(opt)}
-                  className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between border transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 border transition-all ${
                     selectedQuote?.category.slug === opt.category.slug
                       ? "border-amber-400/80 bg-amber-400/10 shadow-[0_0_20px_-5px_rgba(251,191,36,0.3)]"
                       : "border-white/10 bg-[#07090e]/50 hover:border-white/20 hover:bg-[#07090e]/80"
                   }`}
                 >
                   <div>
-                    <h3 className="font-semibold text-lg text-white">{opt.category.name}</h3>
-                    <p className="text-zinc-400 text-xs">{opt.category.passengersMax} Passengers · {opt.category.luggage} Bags</p>
+                    <h3 className="font-semibold text-base sm:text-lg text-white">{opt.category.name}</h3>
+                    <p className="text-zinc-400 text-xs mt-0.5">{opt.category.passengersMax} Passengers · {opt.category.luggage} Bags</p>
                   </div>
-                  <div className="text-right">
-                    <span className="font-display font-bold text-xl text-amber-400">{money(opt.price.total)}</span>
-                    <p className="text-zinc-400 text-xs">GST incl.</p>
+                  <div className="flex sm:flex-col items-baseline sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                    <span className="font-display font-bold text-lg sm:text-xl text-amber-400">{money(opt.price.total)}</span>
+                    <p className="text-zinc-400 text-[11px]">GST incl.</p>
                   </div>
                 </div>
               ))}

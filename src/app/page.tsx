@@ -117,7 +117,7 @@ export default function HomePage() {
             <h2 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">CHOOSE YOUR RIDE</h2>
             <p className="text-zinc-400 text-base sm:text-lg">Tailored mobility options engineered for every Sydney travel requirement.</p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 max-w-5xl mx-auto">
             {RIDE_TYPES.map((rt) => (
               <Link
                 key={rt.slug}

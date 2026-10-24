@@ -178,30 +178,30 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
 
       {/* Driver Information Card (Revealed as soon as Driver Accepts) */}
       {driver ? (
-        <div className="mt-6 p-5 rounded-2xl bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent border border-amber-400/20">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 grid place-items-center text-zinc-950 font-display font-bold text-xl shadow-lg">
+        <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-400/10 via-amber-400/5 to-transparent border border-amber-400/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 sm:gap-4">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 grid place-items-center text-zinc-950 font-display font-bold text-lg sm:text-xl shadow-lg">
                 {driver.name ? driver.name.charAt(0).toUpperCase() : "D"}
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-display font-bold text-lg text-white">{driver.name}</h3>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold">
+                  <h3 className="font-display font-bold text-base sm:text-lg text-white truncate">{driver.name}</h3>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold shrink-0">
                     ★ {driver.rating ? Number(driver.rating).toFixed(1) : "5.0"}
                   </span>
                 </div>
                 {driver.vehicle ? (
-                  <p className="text-sm text-zinc-300 mt-0.5">
-                    {driver.vehicle.color} {driver.vehicle.make} {driver.vehicle.model}
+                  <p className="text-xs sm:text-sm text-zinc-300 mt-0.5 flex flex-wrap items-center gap-1.5">
+                    <span>{driver.vehicle.color} {driver.vehicle.make} {driver.vehicle.model}</span>
                     {driver.vehicle.regoPlate && (
-                      <span className="ml-2 font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-xs">
+                      <span className="font-mono font-bold text-amber-400 px-1.5 py-0.5 rounded bg-zinc-900 border border-white/10 text-[10px] sm:text-xs">
                         {driver.vehicle.regoPlate}
                       </span>
                     )}
                   </p>
                 ) : (
-                  <p className="text-sm text-zinc-400">Assigned Official Driver</p>
+                  <p className="text-xs sm:text-sm text-zinc-400">Assigned Official Driver</p>
                 )}
               </div>
             </div>
@@ -209,7 +209,7 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
             {driver.phone && (
               <a
                 href={`tel:${driver.phone}`}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-xs text-zinc-950 bg-amber-400 hover:bg-amber-300 transition shadow-md active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-semibold text-xs text-zinc-950 bg-amber-400 hover:bg-amber-300 transition shadow-md active:scale-95 shrink-0"
               >
                 <Icon.phone width={14} height={14} />
                 Call Driver ({driver.phone})

@@ -212,8 +212,8 @@ export function HeroBookingForm() {
       id="hero-booking-form"
       noValidate
     >
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex p-1 rounded-full bg-[#07090e]/80 border border-white/10 gap-1" role="group" aria-label="Service">
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="inline-flex w-full sm:w-auto p-1 rounded-full bg-[#07090e]/80 border border-white/10 gap-1" role="group" aria-label="Service">
           {(["taxi", "chauffeur"] as Service[]).map((s) => (
             <button
               key={s}
@@ -221,7 +221,7 @@ export function HeroBookingForm() {
               aria-pressed={service === s}
               onClick={() => { setService(s); if (s !== "taxi") setNow(false); }}
               id={`hero-service-${s}`}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              className={`flex-1 sm:flex-none px-5 py-2 rounded-full text-xs font-semibold transition-all ${
                 service === s
                   ? "bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 text-zinc-950 shadow-sm"
                   : "text-zinc-400 hover:text-white"
@@ -233,18 +233,20 @@ export function HeroBookingForm() {
         </div>
 
         {/* Live Online Drivers Indicator */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto flex justify-start sm:justify-end">
           <button
             type="button"
             onClick={() => setShowDriverList((v) => !v)}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-between sm:justify-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition cursor-pointer"
             title="Click to view online fleet"
             id="hero-online-drivers-badge"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>
-              <strong className="font-bold text-white">{onlineCount}</strong>{" "}
-              {onlineCount === 1 ? "driver" : "drivers"} online now
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>
+                <strong className="font-bold text-white">{onlineCount}</strong>{" "}
+                {onlineCount === 1 ? "driver" : "drivers"} online now
+              </span>
             </span>
             <svg
               width="12"
