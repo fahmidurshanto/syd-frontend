@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { api, money, type Place, type QuoteOption, type Service } from "@/lib/api";
 import { Icon } from "@/components/Icon";
 import { PlaceInput } from "@/components/PlaceInput";
+import { TripTracker } from "@/components/TripTracker";
 
 const parsePlace = (raw: string | null): Place | null => {
   if (!raw) return null;
@@ -26,7 +27,7 @@ function BookingForm({ service }: { service: Service }) {
 
   const [passengerName, setPassengerName] = useState("");
   const [passengerPhone, setPassengerPhone] = useState("");
-  const [bookingResult, setBookingResult] = useState<{ number: string; status: string } | null>(null);
+  const [bookingResult, setBookingResult] = useState<any>(null);
   const [error, setError] = useState("");
 
   const getQuote = async (e: React.FormEvent) => {
@@ -62,7 +63,7 @@ function BookingForm({ service }: { service: Service }) {
     setError("");
     setLoading(true);
     try {
-      const res = await api<{ booking: { number: string; status: string } }>("/bookings", {
+      const res = await api<{ booking: any }>("/bookings", {
         json: {
           quoteToken: selectedQuote.quoteToken,
           passengerName,
@@ -71,7 +72,12 @@ function BookingForm({ service }: { service: Service }) {
           airportTripType: service === "airport" ? airportTripType : undefined,
         },
       });
-      setBookingResult(res.booking);
+      setBookingResult({
+        ...res.booking,
+        pickup: from,
+        destination: to,
+        fare: selectedQuote.price,
+      });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -81,20 +87,13 @@ function BookingForm({ service }: { service: Service }) {
 
   if (bookingResult) {
     return (
-      <div className="reveal max-w-xl mx-auto p-8 text-center rounded-2xl border border-white/10 bg-[#0e121d]/85 backdrop-blur-2xl shadow-2xl">
-        <div className="grid h-16 w-16 place-items-center rounded-full mx-auto mb-4 bg-emerald-500/15 text-emerald-400">
-          <Icon.check width={32} height={32} />
-        </div>
-        <h2 className="font-display font-semibold text-3xl tracking-tight text-white">BOOKING CONFIRMED</h2>
-        <p className="text-zinc-300 mt-2">Booking Reference: <strong className="text-amber-400 font-mono">{bookingResult.number}</strong></p>
-        <p className="text-zinc-400 mt-4 text-sm">Status: {bookingResult.status}. We have sent an SMS update to your phone number.</p>
-        <button
-          onClick={() => window.location.href = "/"}
-          className="inline-flex items-center justify-center h-12 px-8 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg mt-8 transition active:scale-95"
-        >
-          Return to Home
-        </button>
-      </div>
+      <TripTracker
+        booking={bookingResult}
+        onClose={() => {
+          setBookingResult(null);
+          window.location.href = "/";
+        }}
+      />
     );
   }
 

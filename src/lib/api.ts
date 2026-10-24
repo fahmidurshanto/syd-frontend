@@ -757,4 +757,50 @@ export function streamOnlineDriversEvents(
   }
 }
 
+export type PassengerUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  savedPlaces?: Array<{ label: string; name: string; address?: string; lat: number; lng: number }>;
+  preferredPaymentMethod?: string;
+};
+
+const PASSENGER_TOKEN_KEY = "syd_passenger_token";
+
+export function getPassengerToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(PASSENGER_TOKEN_KEY);
+}
+
+export function setPassengerToken(token: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PASSENGER_TOKEN_KEY, token);
+}
+
+export function clearPassengerToken() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(PASSENGER_TOKEN_KEY);
+}
+
+export async function passengerApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = getPassengerToken();
+  const headers = new Headers(options.headers || {});
+  headers.set("Content-Type", "application/json");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const res = await fetch(`${BASE}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Request failed");
+  }
+  return data;
+}
+
 

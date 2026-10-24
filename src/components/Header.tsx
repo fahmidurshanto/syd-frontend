@@ -8,6 +8,7 @@ import { SITE } from "@/lib/site";
 const NAV = [
   { href: "/book/taxi", label: "Taxi" },
   { href: "/book/chauffeur", label: "Limousine" },
+  { href: "/track", label: "Track Ride" },
 ];
 
 export function Header() {
@@ -56,6 +57,13 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/passenger/dashboard"
+            className="hidden sm:inline-flex items-center justify-center h-[38px] px-3.5 rounded-full text-xs font-semibold text-zinc-300 border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white backdrop-blur-md transition-all active:scale-95"
+            id="header-passenger-portal"
+          >
+            My Trips
+          </Link>
           <Link
             href="/driver/dashboard"
             className="hidden sm:inline-flex items-center justify-center h-[38px] px-3.5 rounded-full text-xs font-semibold text-amber-300 border border-amber-400/30 bg-amber-400/10 hover:bg-amber-400/20 backdrop-blur-md transition-all active:scale-95"
