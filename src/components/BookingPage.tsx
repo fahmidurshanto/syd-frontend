@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, API_URL, money, type Place, type QuoteOption, type Service } from "@/lib/api";
+import { api, API_URL, money, getPassengerToken, getPassengerInfo, getPassengerMeApi, setPassengerInfo, type Place, type QuoteOption, type Service } from "@/lib/api";
 import { Icon } from "@/components/Icon";
 import { PlaceInput } from "@/components/PlaceInput";
 import { TripTracker } from "@/components/TripTracker";
@@ -32,37 +32,27 @@ function BookingForm({ service }: { service: Service }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // If logged in as passenger, prefill contact info
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("passenger_info");
-        if (raw) {
-          const info = JSON.parse(raw);
-          if (info.name) setPassengerName(info.name);
-          if (info.phone) setPassengerPhone(info.phone);
-          if (info.email) setPassengerEmail(info.email);
-        }
-      } catch {
-        // ignore
-      }
+    // If logged in as passenger, prefill contact info from cookie
+    const info = getPassengerInfo();
+    if (info) {
+      if (info.name) setPassengerName(info.name);
+      if (info.phone) setPassengerPhone(info.phone);
+      if (info.email) setPassengerEmail(info.email);
+    }
 
-      // If token exists, fetch fresh profile from /passengers/me
-      const token = localStorage.getItem("syd_passenger_token");
-      if (token) {
-        fetch(`${API_URL}/api/v1/passengers/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+    // If token exists, fetch fresh profile from /passengers/me
+    const token = getPassengerToken();
+    if (token) {
+      getPassengerMeApi()
+        .then((data) => {
+          if (data?.passenger) {
+            setPassengerName(data.passenger.name || "");
+            setPassengerPhone(data.passenger.phone || "");
+            setPassengerEmail(data.passenger.email || "");
+            setPassengerInfo(data.passenger);
+          }
         })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            if (data?.passenger) {
-              setPassengerName(data.passenger.name || "");
-              setPassengerPhone(data.passenger.phone || "");
-              setPassengerEmail(data.passenger.email || "");
-              localStorage.setItem("passenger_info", JSON.stringify(data.passenger));
-            }
-          })
-          .catch(() => {});
-      }
+        .catch(() => {});
     }
   }, []);
 
@@ -83,7 +73,13 @@ function BookingForm({ service }: { service: Service }) {
         },
       });
       setOptions(res.options);
-      if (res.options.length > 0) setSelectedQuote(res.options[0]);
+      if (res.options.length > 0) {
+        const preferredVehicle = searchParams.get("vehicle");
+        const matched = preferredVehicle
+          ? res.options.find((opt) => opt.category.slug.toLowerCase() === preferredVehicle.toLowerCase())
+          : null;
+        setSelectedQuote(matched || res.options[0]);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -282,26 +278,87 @@ function BookingForm({ service }: { service: Service }) {
   );
 }
 
-export function BookingPage({ service }: { service: Service }) {
-  const titles: Record<Service, string> = {
+export function BookingPage({ service: serviceProp }: { service?: Service }) {
+  const vehicleLabelMap: Record<string, string> = {
+    taxi: "Taxi",
+    executive: "Executive",
+    luxury: "Luxury",
+    suv: "SUV",
+    mpv: "MPV",
+    van: "Van",
+    sedan: "Sedan",
+  };
+
+  const serviceTitles: Record<Service, string> = {
     taxi: "TAXI SERVICE BOOKING",
     airport: "AIRPORT & TRANSFER BOOKING",
     chauffeur: "LIMOUSINE & CHAUFFEUR SERVICE",
   };
+
   return (
     <div className="py-20 sm:py-28 pt-32 relative">
       <div className="w-[min(1240px,100%-2.5rem)] mx-auto">
-        <div className="max-w-2xl mb-12">
-          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
-            Instant Quote & Reserve
-          </span>
-          <h1 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">{titles[service]}</h1>
-          <p className="text-zinc-400 text-base sm:text-lg">Transparent fixed pricing, zero hidden surges. Fully driver-matched & tracked.</p>
-        </div>
         <Suspense fallback={<div className="h-96 w-full rounded-2xl bg-white/5 animate-pulse" />}>
-          <BookingForm service={service} />
+          <BookingPageInner
+            serviceProp={serviceProp}
+            vehicleLabelMap={vehicleLabelMap}
+            serviceTitles={serviceTitles}
+          />
         </Suspense>
       </div>
     </div>
   );
 }
+
+/** Inner component that reads searchParams (must be inside Suspense) */
+function BookingPageInner({
+  serviceProp,
+  vehicleLabelMap,
+  serviceTitles,
+}: {
+  serviceProp?: Service;
+  vehicleLabelMap: Record<string, string>;
+  serviceTitles: Record<Service, string>;
+}) {
+  const searchParams = useSearchParams();
+  const vehicleSlug = searchParams.get("vehicle");
+  const fareParam = searchParams.get("fare");
+
+  // Derive service: prop > query param > infer from vehicle > default "taxi"
+  const resolvedService: Service =
+    serviceProp ??
+    (searchParams.get("service") as Service | null) ??
+    (vehicleSlug && vehicleSlug !== "taxi" ? "chauffeur" : "taxi");
+
+  // Dynamic heading: if a vehicle slug is present, use its label
+  const vehicleLabel = vehicleSlug
+    ? vehicleLabelMap[vehicleSlug.toLowerCase()] || vehicleSlug.toUpperCase()
+    : null;
+
+  const heading = vehicleLabel
+    ? `${vehicleLabel.toUpperCase()} BOOKING`
+    : serviceTitles[resolvedService];
+
+  return (
+    <>
+      <div className="max-w-2xl mb-12">
+        <span className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-400 inline-flex items-center gap-2.5 before:w-7 before:h-px before:bg-current">
+          Instant Quote & Reserve
+        </span>
+        <h1 className="font-display font-bold text-3xl sm:text-5xl tracking-tight text-white mt-3 mb-2">{heading}</h1>
+        <p className="text-zinc-400 text-base sm:text-lg">Transparent fixed pricing, zero hidden surges. Fully driver-matched & tracked.</p>
+
+        {/* Show pre-looked-up fare from HeroBookingForm */}
+        {fareParam && (
+          <div className="mt-4 inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-amber-400/30 bg-amber-400/10">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">Route Fare</span>
+            <span className="font-display font-bold text-lg text-amber-400">${fareParam} AUD</span>
+          </div>
+        )}
+      </div>
+      <BookingForm service={resolvedService} />
+    </>
+  );
+}
+
+

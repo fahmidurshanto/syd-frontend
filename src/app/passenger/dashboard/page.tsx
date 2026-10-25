@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import {
   clearPassengerToken,
   getPassengerToken,
+  getPassengerMeApi,
+  setPassengerInfo,
+  passengerLogoutApi,
   money,
   passengerApi,
   PassengerUser,
@@ -31,20 +34,20 @@ export default function PassengerDashboardPage() {
 
     try {
       const [profileRes, tripsRes] = await Promise.all([
-        passengerApi<{ success: boolean; passenger: PassengerUser }>("/passengers/me"),
+        getPassengerMeApi(),
         passengerApi<{ success: boolean; activeTrips: any[]; pastTrips: any[] }>("/passengers/trips"),
       ]);
 
       setUser(profileRes.passenger);
-      if (typeof window !== "undefined" && profileRes.passenger) {
-        localStorage.setItem("passenger_info", JSON.stringify(profileRes.passenger));
+      if (profileRes.passenger) {
+        setPassengerInfo(profileRes.passenger);
       }
       setActiveTrips(tripsRes.activeTrips || []);
       setPastTrips(tripsRes.pastTrips || []);
     } catch (err: any) {
       if (!silent) {
         setError(err.message || "Failed to load dashboard");
-        clearPassengerToken();
+        passengerLogoutApi();
         router.push("/passenger/login");
       }
     } finally {
@@ -63,8 +66,9 @@ export default function PassengerDashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogout = () => {
-    clearPassengerToken();
+  const handleLogout = async () => {
+    await passengerLogoutApi();
+    window.dispatchEvent(new Event("syd_auth_change"));
     router.push("/");
   };
 

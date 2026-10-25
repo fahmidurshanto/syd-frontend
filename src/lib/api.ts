@@ -220,7 +220,17 @@ export async function adminRefreshTokenApi(): Promise<{
 }
 
 export async function api<T>(path: string, init: RequestInit & { json?: unknown; _retry?: boolean } = {}): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const isPublicAuth =
+    path.includes("/login") ||
+    path.includes("/register") ||
+    path.includes("/send-otp") ||
+    path.includes("/verify-otp") ||
+    path.includes("/seed");
+
+  const token = !isPublicAuth && typeof document !== "undefined"
+    ? (path.startsWith("/drivers") ? getDriverToken() : path.startsWith("/passengers") ? getPassengerToken() : getDriverToken() || getPassengerToken())
+    : null;
+
   const res = await fetch(`${BASE}${path}`, {
     credentials: "include",
     ...init,
@@ -234,8 +244,14 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown;
     cache: "no-store",
   });
 
-  // If 401 Unauthorized occurs on an authenticated request and we haven't already retried
-  if (res.status === 401 && !init._retry && !path.includes("/admins/login") && !path.includes("/admins/refresh-token")) {
+  // If 401 Unauthorized occurs on an ADMIN authenticated request and we haven't already retried
+  if (
+    res.status === 401 &&
+    !init._retry &&
+    path.startsWith("/admins") &&
+    !path.includes("/admins/login") &&
+    !path.includes("/admins/refresh-token")
+  ) {
     if (!isRefreshing) {
       isRefreshing = true;
       try {
@@ -618,27 +634,74 @@ export async function getAdminDriversApi(params?: {
   }
 }
 
+// Dedicated Driver Portal Client API
+export async function driverApi<T = any>(endpoint: string, options: RequestInit & { json?: unknown } = {}): Promise<T> {
+  const isAuthEndpoint = endpoint.includes("/login") || endpoint.includes("/register");
+  const token = !isAuthEndpoint ? getDriverToken() : null;
+  const headers = new Headers(options.headers || {});
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const res = await fetch(`${BASE}${endpoint}`, {
+    credentials: "include",
+    ...options,
+    method: options.method ?? (options.json ? "POST" : "GET"),
+    headers,
+    body: options.json ? JSON.stringify(options.json) : options.body,
+    cache: "no-store",
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errorMsg = Array.isArray(data.message)
+      ? data.message.join(", ")
+      : (data.message ?? data.error ?? "Request failed");
+    throw new ApiError(errorMsg, res.status, data.fields);
+  }
+  return data as T;
+}
+
 // Driver Portal Client APIs
 export async function driverRegisterApi(payload: any) {
-  return api<{ success: boolean; message: string; driver: any }>("/drivers/register", {
+  return driverApi<{ success: boolean; message: string; driver: any }>("/drivers/register", {
     json: payload,
   });
 }
 
 export async function driverLoginApi(payload: { email: string; password: string }) {
-  return api<{ success: boolean; message: string; token: string; driver: any }>("/drivers/login", {
+  return driverApi<{ success: boolean; message: string; token: string; driver: any }>("/drivers/login", {
     json: payload,
   });
 }
 
-export async function driverGetMeApi(token: string) {
-  return api<any>("/drivers/me", {
-    headers: { Authorization: `Bearer ${token}` },
+export async function driverGetMeApi(token?: string) {
+  const t = token || getDriverToken();
+  return driverApi<any>("/drivers/me", {
+    headers: t ? { Authorization: `Bearer ${t}` } : {},
   });
 }
 
+export const getDriverMeApi = driverGetMeApi;
+
+export async function driverLogoutApi(): Promise<{ success: boolean; message: string }> {
+  const t = getDriverToken();
+  try {
+    await driverApi<{ success: boolean; message: string }>("/drivers/logout", {
+      method: "POST",
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+    });
+  } catch {}
+  clearDriverToken();
+  clearDriverInfo();
+  return { success: true, message: "Logged out successfully" };
+}
+
 export async function driverUpdateStatusApi(token: string, payload: { isOnline: boolean; lat?: number; lng?: number }) {
-  return api<{ success: boolean; isOnline: boolean; status: string }>("/drivers/status", {
+  return driverApi<{ success: boolean; isOnline: boolean; status: string }>("/drivers/status", {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     json: payload,
@@ -646,7 +709,7 @@ export async function driverUpdateStatusApi(token: string, payload: { isOnline: 
 }
 
 export async function driverGetTripsApi(token: string) {
-  return api<{
+  return driverApi<{
     success: boolean;
     currentTrips: BookingRecord[];
     availableJobs: BookingRecord[];
@@ -657,7 +720,7 @@ export async function driverGetTripsApi(token: string) {
 }
 
 export async function driverAcceptTripApi(token: string, bookingId: string) {
-  return api<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/accept`, {
+  return driverApi<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/accept`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -668,7 +731,7 @@ export async function driverUpdateTripStatusApi(
   bookingId: string,
   status: "on_the_way" | "arrived" | "in_progress" | "completed"
 ) {
-  return api<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/status`, {
+  return driverApi<{ success: boolean; message: string; booking: BookingRecord }>(`/drivers/trips/${bookingId}/status`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     json: { status },
@@ -766,41 +829,159 @@ export type PassengerUser = {
   preferredPaymentMethod?: string;
 };
 
+// Universal Client Cookie Helpers
+export function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function setCookie(name: string, value: string, days = 30) {
+  if (typeof document === "undefined") return;
+  const maxAge = days * 24 * 60 * 60;
+  const secure = window.location.protocol === "https:" ? ";Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${maxAge};SameSite=Lax${secure}`;
+}
+
+export function clearCookie(name: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=;path=/;max-age=0;SameSite=Lax`;
+}
+
+// Passenger Auth & Profile Cookie Helpers
 const PASSENGER_TOKEN_KEY = "syd_passenger_token";
+const PASSENGER_INFO_KEY = "syd_passenger_info";
 
 export function getPassengerToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(PASSENGER_TOKEN_KEY);
+  return getCookie(PASSENGER_TOKEN_KEY);
 }
 
 export function setPassengerToken(token: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(PASSENGER_TOKEN_KEY, token);
+  setCookie(PASSENGER_TOKEN_KEY, token);
 }
 
 export function clearPassengerToken() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(PASSENGER_TOKEN_KEY);
+  clearCookie(PASSENGER_TOKEN_KEY);
+}
+
+export function getPassengerInfo(): PassengerUser | null {
+  const raw = getCookie(PASSENGER_INFO_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setPassengerInfo(passenger: PassengerUser | any) {
+  setCookie(PASSENGER_INFO_KEY, JSON.stringify(passenger));
+}
+
+export function clearPassengerInfo() {
+  clearCookie(PASSENGER_INFO_KEY);
+}
+
+export async function getPassengerMeApi(): Promise<{ success: boolean; passenger: PassengerUser }> {
+  return passengerApi<{ success: boolean; passenger: PassengerUser }>("/passengers/me");
+}
+
+export async function passengerLogoutApi(): Promise<{ success: boolean; message: string }> {
+  try {
+    await passengerApi<{ success: boolean; message: string }>("/passengers/logout", {
+      method: "POST",
+    });
+  } catch {}
+  clearPassengerToken();
+  clearPassengerInfo();
+  return { success: true, message: "Logged out successfully" };
+}
+
+// Driver Auth & Profile Cookie Helpers
+const DRIVER_TOKEN_KEY = "syd_driver_token";
+const DRIVER_INFO_KEY = "syd_driver_info";
+
+export function getDriverToken(): string | null {
+  return getCookie(DRIVER_TOKEN_KEY);
+}
+
+export function setDriverToken(token: string) {
+  setCookie(DRIVER_TOKEN_KEY, token);
+}
+
+export function clearDriverToken() {
+  clearCookie(DRIVER_TOKEN_KEY);
+}
+
+export function getDriverInfo(): any | null {
+  const raw = getCookie(DRIVER_INFO_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setDriverInfo(driver: any) {
+  setCookie(DRIVER_INFO_KEY, JSON.stringify(driver));
+}
+
+export function clearDriverInfo() {
+  clearCookie(DRIVER_INFO_KEY);
+}
+
+// Admin Auth & Profile Cookie Helpers
+const ADMIN_INFO_KEY = "syd_admin_info";
+
+export function getAdminInfo(): AdminUser | null {
+  const raw = getCookie(ADMIN_INFO_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setAdminInfo(admin: AdminUser | any) {
+  setCookie(ADMIN_INFO_KEY, JSON.stringify(admin));
+}
+
+export function clearAdminInfo() {
+  clearCookie(ADMIN_INFO_KEY);
 }
 
 export async function passengerApi<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getPassengerToken();
+  const isAuthEndpoint =
+    endpoint.includes("/login") ||
+    endpoint.includes("/register") ||
+    endpoint.includes("/send-otp") ||
+    endpoint.includes("/verify-otp");
+
+  const token = !isAuthEndpoint ? getPassengerToken() : null;
   const headers = new Headers(options.headers || {});
-  headers.set("Content-Type", "application/json");
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
   const res = await fetch(`${BASE}${endpoint}`, {
+    credentials: "include",
     ...options,
     headers,
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.message || "Request failed");
+    const errorMsg = Array.isArray(data.message)
+      ? data.message.join(", ")
+      : (data.message ?? data.error ?? "Request failed");
+    throw new Error(errorMsg);
   }
-  return data;
+  return data as T;
 }
 
 

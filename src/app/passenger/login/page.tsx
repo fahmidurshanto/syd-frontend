@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { passengerApi, setPassengerToken } from "@/lib/api";
+import {
+  passengerApi,
+  setPassengerToken,
+  setPassengerInfo,
+  clearDriverToken,
+  clearDriverInfo,
+  clearAdminInfo,
+} from "@/lib/api";
 import { Icon } from "@/components/Icon";
 
 export default function PassengerLoginPage() {
@@ -50,12 +57,19 @@ export default function PassengerLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await passengerApi<{ success: boolean; token: string }>("/passengers/verify-otp", {
+      const res = await passengerApi<{ success: boolean; token: string; passenger?: any }>("/passengers/verify-otp", {
         method: "POST",
         body: JSON.stringify({ phoneOrEmail: identifier, otp }),
       });
       if (res.token) {
+        clearDriverToken();
+        clearDriverInfo();
+        clearAdminInfo();
         setPassengerToken(res.token);
+        if (res.passenger) {
+          setPassengerInfo(res.passenger);
+        }
+        window.dispatchEvent(new Event("syd_auth_change"));
         router.push("/passenger/dashboard");
       }
     } catch (err: any) {
@@ -72,12 +86,19 @@ export default function PassengerLoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await passengerApi<{ success: boolean; token: string }>("/passengers/login", {
+      const res = await passengerApi<{ success: boolean; token: string; passenger?: any }>("/passengers/login", {
         method: "POST",
         body: JSON.stringify({ identifier, password }),
       });
       if (res.token) {
+        clearDriverToken();
+        clearDriverInfo();
+        clearAdminInfo();
         setPassengerToken(res.token);
+        if (res.passenger) {
+          setPassengerInfo(res.passenger);
+        }
+        window.dispatchEvent(new Event("syd_auth_change"));
         router.push("/passenger/dashboard");
       }
     } catch (err: any) {

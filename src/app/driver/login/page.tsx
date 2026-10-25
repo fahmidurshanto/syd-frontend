@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { driverLoginApi } from "@/lib/api";
+import {
+  driverLoginApi,
+  setDriverToken,
+  setDriverInfo,
+  clearPassengerToken,
+  clearPassengerInfo,
+  clearAdminInfo,
+} from "@/lib/api";
 
 export default function DriverLoginPage() {
   const router = useRouter();
@@ -20,8 +27,14 @@ export default function DriverLoginPage() {
     try {
       const res = await driverLoginApi({ email, password });
       if (res.token) {
-        localStorage.setItem("driver_token", res.token);
-        localStorage.setItem("driver_info", JSON.stringify(res.driver));
+        clearPassengerToken();
+        clearPassengerInfo();
+        clearAdminInfo();
+        setDriverToken(res.token);
+        if (res.driver) {
+          setDriverInfo(res.driver);
+        }
+        window.dispatchEvent(new Event("syd_auth_change"));
         router.push("/driver/dashboard");
       }
     } catch (err: any) {

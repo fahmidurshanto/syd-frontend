@@ -37,6 +37,7 @@ export function HeroBookingForm() {
   // Route lookup state from routes.controller.ts GET /routes/lookup
   const [routeFare, setRouteFare] = useState<PlaceRoute | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [selectedVehicleSlug, setSelectedVehicleSlug] = useState<string | null>(null);
 
   // Popular routes catalog from routes.controller.ts GET /routes
   const [popularRoutes, setPopularRoutes] = useState<PlaceRoute[]>([]);
@@ -118,6 +119,7 @@ export function HeroBookingForm() {
   useEffect(() => {
     if (!from?.name || !to?.name) {
       setRouteFare(null);
+      setSelectedVehicleSlug(null);
       return;
     }
     let cancelled = false;
@@ -125,10 +127,30 @@ export function HeroBookingForm() {
 
     lookupRouteFareApi(from.name, to.name)
       .then((fare) => {
-        if (!cancelled) setRouteFare(fare);
+        if (!cancelled) {
+          setRouteFare(fare);
+          if (fare) {
+            const vFares = (fare.vehicleAndFares || fare.vehicleFares || {}) as Record<string, number>;
+            const keys = Object.keys(vFares);
+            if (keys.length > 0) {
+              const defaultSlug =
+                (service === "taxi" && vFares["taxi"] !== undefined ? "taxi" : undefined) ??
+                (service === "chauffeur" ? (vFares["executive"] !== undefined ? "executive" : vFares["luxury"] !== undefined ? "luxury" : undefined) : undefined) ??
+                keys[0];
+              setSelectedVehicleSlug(defaultSlug || null);
+            } else {
+              setSelectedVehicleSlug(null);
+            }
+          } else {
+            setSelectedVehicleSlug(null);
+          }
+        }
       })
       .catch(() => {
-        if (!cancelled) setRouteFare(null);
+        if (!cancelled) {
+          setRouteFare(null);
+          setSelectedVehicleSlug(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setRouteLoading(false);
@@ -137,7 +159,7 @@ export function HeroBookingForm() {
     return () => {
       cancelled = true;
     };
-  }, [from?.name, to?.name]);
+  }, [from?.name, to?.name, service]);
 
   const handleFromChange = (p: Place | null) => {
     setFrom(p);
@@ -190,16 +212,61 @@ export function HeroBookingForm() {
     setErrors({});
   };
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleReset = () => {
+    setFrom(null);
+    setTo(null);
+    setWhen("");
+    setNow(false);
+    setPax(1);
+    setErrors({});
+    setAvailableDestinations([]);
+    setRouteFare(null);
+    setSelectedVehicleSlug(null);
+  };
+
+  const submit = (e?: React.FormEvent, customVehicle?: string) => {
+    if (e) e.preventDefault();
     const err: Record<string, string> = {};
     if (!from) err.from = "Choose a pickup location from the list";
     if (!to) err.to = "Choose a destination from available routes";
     if (!isNow && !when) err.when = "Choose a date and time";
     setErrors(err);
     if (Object.keys(err).length) return;
-    const qs = new URLSearchParams({ pax: String(pax) });
-    let url = `/book/${service}?${qs}&from=${encodePlace(from!)}&to=${encodePlace(to!)}`;
+
+    const chosenVehicle = customVehicle || selectedVehicleSlug;
+    // Map vehicle category to appropriate service type
+    let targetService = service;
+    if (chosenVehicle) {
+      if (chosenVehicle === "taxi") {
+        targetService = "taxi";
+      } else {
+        targetService = "chauffeur";
+      }
+    }
+
+    const qs = new URLSearchParams({ pax: String(pax), service: targetService });
+    if (chosenVehicle) {
+      qs.set("vehicle", chosenVehicle);
+    }
+
+    // Pass the pre-looked-up fare so the booking page can display it
+    if (routeFare && chosenVehicle) {
+      const vFares = (routeFare.vehicleAndFares || routeFare.vehicleFares || {}) as Record<string, number>;
+      const baseFare = vFares[chosenVehicle];
+      if (baseFare !== undefined) {
+        const rawPax = routeFare.increaseFarePerPerson ?? routeFare.increaseFairPerPerson;
+        const extraPax = Math.max(0, pax - 1);
+        let paxExtra = 0;
+        if (typeof rawPax === "object" && rawPax !== null) {
+          paxExtra = (rawPax as Record<string, number>)[chosenVehicle] ?? (rawPax as Record<string, number>)["taxi"] ?? 0;
+        } else {
+          paxExtra = Number(rawPax) || 0;
+        }
+        qs.set("fare", String(Number(baseFare) + extraPax * paxExtra));
+      }
+    }
+
+    let url = `/book?${qs}&from=${encodePlace(from!)}&to=${encodePlace(to!)}`;
     if (!isNow) url += `&when=${encodeURIComponent(new Date(when).toISOString())}`;
     router.push(url);
   };
@@ -367,23 +434,38 @@ export function HeroBookingForm() {
               </button>
             )}
           </span>
-          {isNow ? (
-            <div className="h-[52px] w-full rounded-xl pl-11 pr-4 flex items-center text-sm font-semibold text-amber-300 border border-white/10 bg-[#07090e]/60">
-              Now · pickup in minutes
-            </div>
-          ) : (
-            <input
-              type="datetime-local"
-              className="h-[52px] w-full rounded-xl pl-11 pr-4 text-sm font-medium text-white border border-white/10 bg-[#07090e]/60 focus:border-amber-400 focus:bg-[#07090e]/90 outline-none transition"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-              aria-invalid={!!errors.when}
-              aria-label="Pickup date and time"
-              id="hero-when"
-              min={new Date(Date.now() + 30 * 60_000).toISOString().slice(0, 16)}
-            />
-          )}
-          <Icon.clock className="absolute left-3.5 bottom-4 w-5 h-5 text-amber-400 pointer-events-none" />
+          <div className="relative">
+            {isNow ? (
+              <div className="h-[52px] w-full rounded-xl pl-11 pr-4 flex items-center text-sm font-semibold text-amber-300 border border-white/10 bg-[#07090e]/60">
+                Now · pickup in minutes
+              </div>
+            ) : (
+              <input
+                type="datetime-local"
+                className={`h-[52px] w-full rounded-xl pl-11 pr-3 text-sm font-medium text-white border bg-[#07090e]/60 outline-none transition [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-75 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 ${
+                  errors.when
+                    ? "border-red-500/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                    : "border-white/10 hover:border-white/25 focus:border-amber-400/80 focus:bg-[#07090e]/90 focus:ring-2 focus:ring-amber-400/20"
+                }`}
+                value={when}
+                onChange={(e) => {
+                  setWhen(e.target.value);
+                  if (errors.when) {
+                    setErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.when;
+                      return next;
+                    });
+                  }
+                }}
+                aria-invalid={!!errors.when}
+                aria-label="Pickup date and time"
+                id="hero-when"
+                min={new Date(Date.now() + 30 * 60_000).toISOString().slice(0, 16)}
+              />
+            )}
+            <Icon.clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400 pointer-events-none" />
+          </div>
           {errors.when && <span className="text-red-400 text-xs mt-0.5">{errors.when}</span>}
         </div>
         <div className="relative flex flex-col gap-1.5 min-w-0">
@@ -430,11 +512,27 @@ export function HeroBookingForm() {
           </div>
         </div>
         <button
-          type="submit"
-          className="inline-flex items-center justify-center gap-2 h-[52px] px-6 rounded-full font-semibold text-sm text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-[0_4px_25px_-5px_rgba(251,191,36,0.5)] md:col-span-2 lg:col-span-1 transition active:scale-95"
-          id="hero-get-quote"
+          type="button"
+          onClick={handleReset}
+          className="inline-flex items-center justify-center gap-2 h-[52px] px-6 rounded-full font-semibold text-sm text-zinc-300 hover:text-white border border-white/10 bg-white/5 hover:bg-white/10 md:col-span-2 lg:col-span-1 transition active:scale-95 cursor-pointer"
+          id="hero-reset-form"
+          title="Reset form"
         >
-          Get quote <Icon.arrow />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-amber-400"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          Reset
         </button>
       </div>
 
@@ -447,45 +545,122 @@ export function HeroBookingForm() {
 
       {routeFare && !routeLoading && (() => {
         const vehicleFares = (routeFare.vehicleAndFares || routeFare.vehicleFares || {}) as Record<string, number>;
-        const baseFair =
-          vehicleFares[service] ??
-          vehicleFares["taxi"] ??
-          (Object.values(vehicleFares)[0] as number | undefined) ??
-          routeFare.fair ??
-          routeFare.fare ??
-          0;
-
         const rawPax = routeFare.increaseFarePerPerson ?? routeFare.increaseFairPerPerson;
-        const increasePerPerson = typeof rawPax === "object" && rawPax !== null
-          ? (rawPax[service] ?? rawPax["taxi"] ?? Object.values(rawPax)[0] ?? 0)
-          : (Number(rawPax) || 0);
-
         const extraPax = Math.max(0, pax - 1);
-        const totalCalculatedFair = baseFair + (extraPax * increasePerPerson);
+        const entries = Object.entries(vehicleFares);
+
+        // Friendly vehicle label lookup
+        const getVehicleLabel = (slug: string) => {
+          const map: Record<string, string> = {
+            taxi: "Taxi",
+            executive: "Executive",
+            luxury: "Luxury",
+            suv: "SUV",
+            mpv: "MPV",
+            van: "Van",
+            sedan: "Sedan",
+          };
+          return map[slug.toLowerCase()] || slug.toUpperCase();
+        };
+
+        const getPaxSurcharge = (slug: string) => {
+          if (typeof rawPax === "object" && rawPax !== null) {
+            return (rawPax as Record<string, number>)[slug] ?? (rawPax as Record<string, number>)["taxi"] ?? 0;
+          }
+          return Number(rawPax) || 0;
+        };
+
+        const effectiveSelectedSlug =
+          selectedVehicleSlug && vehicleFares[selectedVehicleSlug] !== undefined
+            ? selectedVehicleSlug
+            : entries.length > 0
+            ? entries[0][0]
+            : null;
+
+        const selectedLabel = effectiveSelectedSlug ? getVehicleLabel(effectiveSelectedSlug) : "Vehicle";
 
         return (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs" id="hero-route-estimate">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-amber-300 border border-amber-400/40 bg-amber-400/15">
-                Fixed Rate Route
-              </span>
-              <span className="text-sm font-bold text-white">
-                ${totalCalculatedFair} {routeFare.currency || "AUD"}
-              </span>
-              {extraPax > 0 && increasePerPerson > 0 && (
-                <span className="text-[11px] text-amber-300 font-medium">
-                  (${baseFair} base + ${extraPax * increasePerPerson} for {pax} pax)
+          <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-xs space-y-3" id="hero-route-estimate">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold text-amber-300 border border-amber-400/40 bg-amber-400/15">
+                  Fixed Rate Route
                 </span>
-              )}
-              {routeFare.distanceKm && <span className="text-zinc-400">· {routeFare.distanceKm} km</span>}
-              {routeFare.durationMin && <span className="text-zinc-400">· ~{routeFare.durationMin} mins</span>}
-              {routeFare.firstPlace && routeFare.lastPlace && (
-                <span className="text-amber-300 font-medium">
-                  ({routeFare.firstPlace} ⇄ {routeFare.lastPlace})
-                </span>
-              )}
+                {routeFare.firstPlace && routeFare.lastPlace && (
+                  <span className="text-amber-300 font-semibold text-xs">
+                    {routeFare.firstPlace} ⇄ {routeFare.lastPlace}
+                  </span>
+                )}
+                {routeFare.distanceKm && <span className="text-zinc-400">· {routeFare.distanceKm} km</span>}
+                {routeFare.durationMin && <span className="text-zinc-400">· ~{routeFare.durationMin} mins</span>}
+              </div>
+              {routeFare.notes && <span className="text-zinc-400 italic text-[11px] truncate max-w-xs">{routeFare.notes}</span>}
             </div>
-            {routeFare.notes && <span className="text-zinc-400 italic text-[11px] truncate max-w-sm">{routeFare.notes}</span>}
+
+            {/* List all vehicles configured in vehicleAndFares (Single Select) */}
+            <div className="space-y-1.5 pt-1 border-t border-amber-400/15">
+              <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                <span>Select a vehicle:</span>
+                <span className="text-amber-400/80">Click vehicle to select</span>
+              </div>
+              <div className="flex flex-wrap items-stretch gap-2">
+                {entries.length > 0 ? (
+                  entries.map(([slug, baseFare]) => {
+                    const paxExtra = getPaxSurcharge(slug);
+                    const total = Number(baseFare) + (extraPax * paxExtra);
+                    const isSelected = effectiveSelectedSlug === slug;
+
+                    return (
+                      <button
+                        key={slug}
+                        type="button"
+                        onClick={() => setSelectedVehicleSlug(slug)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition cursor-pointer text-left ${
+                          isSelected
+                            ? "bg-amber-400/25 border-amber-400 text-amber-200 ring-1 ring-amber-400 shadow-md"
+                            : "bg-black/30 border-white/10 text-zinc-300 hover:border-amber-400/50 hover:bg-black/50"
+                        }`}
+                      >
+                        <span className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${
+                          isSelected ? "border-amber-400 bg-amber-400" : "border-zinc-500"
+                        }`}>
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-zinc-950" />}
+                        </span>
+                        <span className="font-semibold text-white tracking-wide">
+                          {getVehicleLabel(slug)}
+                        </span>
+                        <span className="text-amber-400 font-bold text-sm">
+                          ${total} <span className="text-[10px] text-zinc-400 font-normal">{routeFare.currency || "AUD"}</span>
+                        </span>
+                        {extraPax > 0 && paxExtra > 0 && (
+                          <span className="text-[10px] text-amber-300/80">
+                            (+${extraPax * paxExtra})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="text-white font-medium">
+                    ${routeFare.fare ?? routeFare.fair ?? 0} {routeFare.currency || "AUD"}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action button to continue with the selected vehicle */}
+            {effectiveSelectedSlug && (
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => submit(undefined, effectiveSelectedSlug)}
+                  className="inline-flex items-center justify-center gap-2 h-10 px-6 rounded-full font-semibold text-xs text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-md transition active:scale-95 cursor-pointer"
+                  id="hero-continue-vehicle"
+                >
+                  Continue with {selectedLabel} <Icon.arrow />
+                </button>
+              </div>
+            )}
           </div>
         );
       })()}

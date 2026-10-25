@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { passengerApi, setPassengerToken } from "@/lib/api";
+import {
+  passengerApi,
+  setPassengerToken,
+  setPassengerInfo,
+  clearDriverToken,
+  clearDriverInfo,
+  clearAdminInfo,
+} from "@/lib/api";
 import { Icon } from "@/components/Icon";
 
 export default function PassengerRegisterPage() {
@@ -21,7 +28,7 @@ export default function PassengerRegisterPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await passengerApi<{ success: boolean; token: string }>("/passengers/register", {
+      const res = await passengerApi<{ success: boolean; token: string; passenger?: any }>("/passengers/register", {
         method: "POST",
         body: JSON.stringify({
           name,
@@ -31,7 +38,14 @@ export default function PassengerRegisterPage() {
         }),
       });
       if (res.token) {
+        clearDriverToken();
+        clearDriverInfo();
+        clearAdminInfo();
         setPassengerToken(res.token);
+        if (res.passenger) {
+          setPassengerInfo(res.passenger);
+        }
+        window.dispatchEvent(new Event("syd_auth_change"));
         router.push("/passenger/dashboard");
       }
     } catch (err: any) {

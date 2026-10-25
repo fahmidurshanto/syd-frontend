@@ -2,7 +2,19 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AdminUser, adminLoginApi, adminLogoutApi, getAdminMeApi } from "./api";
+import {
+  AdminUser,
+  adminLoginApi,
+  adminLogoutApi,
+  getAdminMeApi,
+  getAdminInfo,
+  setAdminInfo,
+  clearAdminInfo,
+  clearPassengerToken,
+  clearPassengerInfo,
+  clearDriverToken,
+  clearDriverInfo,
+} from "./api";
 
 interface AdminAuthContextType {
   isAuthenticated: boolean;
@@ -24,22 +36,14 @@ const AdminAuthContext = createContext<AdminAuthContextType>({
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const cached = localStorage.getItem("syd_admin_user");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.email) return parsed;
-      }
-    } catch { }
-    return null;
+    return getAdminInfo();
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
       const hasCookie = document.cookie.includes("refreshToken=") || document.cookie.includes("accessToken=");
-      const hasUser = !!localStorage.getItem("syd_admin_user");
+      const hasUser = !!getAdminInfo();
       return hasCookie || hasUser;
     } catch {
       return false;
@@ -56,18 +60,14 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       if (res && res.success && res.admin) {
         setIsAuthenticated(true);
         setAdminUser(res.admin);
-        try {
-          localStorage.setItem("syd_admin_user", JSON.stringify(res.admin));
-        } catch { }
+        setAdminInfo(res.admin);
         return;
       }
     } catch {
       // If cookie session is completely invalid or expired (even after refreshTokens attempt)
       setIsAuthenticated(false);
       setAdminUser(null);
-      try {
-        localStorage.removeItem("syd_admin_user");
-      } catch { }
+      clearAdminInfo();
     } finally {
       setLoading(false);
     }
@@ -85,11 +85,14 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await adminLoginApi(email.trim(), password);
       if (res.success && res.admin) {
+        clearPassengerToken();
+        clearPassengerInfo();
+        clearDriverToken();
+        clearDriverInfo();
         setIsAuthenticated(true);
         setAdminUser(res.admin);
-        try {
-          localStorage.setItem("syd_admin_user", JSON.stringify(res.admin));
-        } catch { }
+        setAdminInfo(res.admin);
+        window.dispatchEvent(new Event("syd_auth_change"));
         return { ok: true };
       }
       return { ok: false, error: res.message || "Failed to authenticate" };
@@ -106,9 +109,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     } catch { }
     setIsAuthenticated(false);
     setAdminUser(null);
-    try {
-      localStorage.removeItem("syd_admin_user");
-    } catch { }
+    clearAdminInfo();
+    window.dispatchEvent(new Event("syd_auth_change"));
     router.push("/admin/login");
   };
 

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import type { PlaceRoute } from "@/lib/api";
+import { lookupRouteFareApi } from "@/lib/api";
 import { VehicleFareConfig } from "./VehicleFareConfig";
 
 interface RouteModalProps {
@@ -22,11 +24,54 @@ export function RouteModal({
   onVehicleFareChange,
   onVehiclePaxSurchargeChange,
 }: RouteModalProps) {
+  const [existingRoute, setExistingRoute] = useState<PlaceRoute | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+
   const vFares = (route.vehicleAndFares || route.vehicleFares || {}) as Record<string, number>;
   const vPaxSurcharges =
     typeof route.increaseFarePerPerson === "object" && route.increaseFarePerPerson !== null
       ? (route.increaseFarePerPerson as Record<string, number>)
       : {};
+
+  // Check if a route already exists between firstPlace and lastPlace when creating a new route
+  useEffect(() => {
+    const origin = route.firstPlace?.trim() || "";
+    const destination = route.lastPlace?.trim() || "";
+
+    if (!origin || !destination) {
+      setExistingRoute(null);
+      setIsChecking(false);
+      return;
+    }
+
+    // Debounce the lookup to prevent excessive API requests while typing
+    const timer = setTimeout(async () => {
+      setIsChecking(true);
+      try {
+        const found = await lookupRouteFareApi(origin, destination);
+        // If found and it's not the one we are currently editing (different _id or creating new route)
+        if (found && (!route._id || found._id !== route._id)) {
+          setExistingRoute(found);
+        } else {
+          setExistingRoute(null);
+        }
+      } catch {
+        setExistingRoute(null);
+      } finally {
+        setIsChecking(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [route.firstPlace, route.lastPlace, route._id]);
+
+  const handleLoadExistingRoute = () => {
+    if (!existingRoute) return;
+    onChange({
+      ...existingRoute,
+    });
+    setExistingRoute(null);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
@@ -48,10 +93,40 @@ export function RouteModal({
           </button>
         </div>
 
+        {/* Existing Route Warning Box */}
+        {existingRoute && (
+          <div className="mb-5 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="text-amber-400 text-lg leading-none mt-0.5">⚠️</span>
+                <div>
+                  <h4 className="text-sm font-semibold text-amber-300">
+                    Route already exists
+                  </h4>
+                  <p className="text-xs text-amber-200/80 mt-0.5 leading-relaxed">
+                    A route between <strong className="text-white font-medium">{existingRoute.firstPlace}</strong> and <strong className="text-white font-medium">{existingRoute.lastPlace}</strong> is already configured in the database.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleLoadExistingRoute}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-400 text-black hover:bg-amber-300 transition shadow-sm self-start sm:self-center shrink-0 cursor-pointer"
+              >
+                <span>✏️</span>
+                <span>Edit Existing Route</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={onSave} className="space-y-5 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-white/70 font-semibold mb-1">Origin (First Place) *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-white/70 font-semibold">Origin (First Place) *</label>
+                {isChecking && <span className="text-[10px] text-amber-400/80 animate-pulse">Checking route...</span>}
+              </div>
               <input
                 type="text"
                 required
@@ -135,10 +210,11 @@ export function RouteModal({
             </button>
             <button
               type="submit"
-              disabled={isSaving}
-              className="inline-flex items-center justify-center h-[38px] px-5 rounded-full text-xs font-semibold text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-md transition disabled:opacity-50"
+              disabled={isSaving || (Boolean(existingRoute) && !route._id)}
+              title={Boolean(existingRoute) && !route._id ? "Route already exists. Click 'Edit Existing Route' above." : ""}
+              className="inline-flex items-center justify-center h-[38px] px-5 rounded-full text-xs font-semibold text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-md transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
-              {isSaving ? "Saving..." : "Save Route Fare"}
+              {isSaving ? "Saving..." : route._id ? "Update Route Fare" : "Save Route Fare"}
             </button>
           </div>
         </form>

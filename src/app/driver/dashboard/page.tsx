@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  getDriverToken,
+  setDriverInfo,
+  driverLogoutApi,
+  getDriverMeApi,
   driverGetMeApi,
   driverUpdateStatusApi,
   driverGetTripsApi,
@@ -49,7 +53,7 @@ export default function DriverDashboardPage() {
 
   // Load Auth Token & Establish Live SSE Dispatch Connection
   useEffect(() => {
-    const savedToken = localStorage.getItem("driver_token");
+    const savedToken = getDriverToken();
     if (!savedToken) {
       router.push("/driver/login");
       return;
@@ -57,13 +61,14 @@ export default function DriverDashboardPage() {
     setToken(savedToken);
 
     // Fetch Profile
-    driverGetMeApi(savedToken)
+    getDriverMeApi(savedToken)
       .then((data) => {
         setDriver(data);
+        setDriverInfo(data);
         setIsOnline(data.isOnline || false);
       })
       .catch(() => {
-        localStorage.removeItem("driver_token");
+        driverLogoutApi();
         router.push("/driver/login");
       });
 
@@ -181,9 +186,9 @@ export default function DriverDashboardPage() {
     }
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("driver_token");
-    localStorage.removeItem("driver_info");
+  const handleSignOut = async () => {
+    await driverLogoutApi();
+    window.dispatchEvent(new Event("syd_auth_change"));
     router.push("/driver/login");
   };
 
