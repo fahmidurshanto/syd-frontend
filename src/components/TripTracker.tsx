@@ -39,6 +39,7 @@ const STATUS_STEPS = [
 ];
 
 export function TripTracker({ booking, onClose }: TripTrackerProps) {
+  const bookingNum = booking.number || (booking as any).bookingNumber || "";
   const [currentStatus, setCurrentStatus] = useState<string>(booking.status || "confirmed");
   const [driver, setDriver] = useState<any>(booking.driver || null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -76,10 +77,12 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
   };
 
   useEffect(() => {
+    if (!bookingNum) return;
+
     // 1. Initial full fetch to get up-to-date driver status
     const fetchLatestBooking = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/v1/bookings/${booking.number}`);
+        const res = await fetch(`${API_URL}/api/v1/bookings/${bookingNum}`);
         if (res.ok) {
           const data = await res.json();
           if (data.booking) {
@@ -96,7 +99,7 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
     // 2. Real-Time SSE Listener
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource(`${API_URL}/api/v1/bookings/${booking.number}/events`);
+      eventSource = new EventSource(`${API_URL}/api/v1/bookings/${bookingNum}/events`);
 
       eventSource.onmessage = (event) => {
         try {
@@ -109,7 +112,7 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
               setDriver(payload.driver);
             }
             if (payload.message) {
-              triggerNotification(`Trip Update: ${booking.number}`, payload.message);
+              triggerNotification(`Trip Update: ${bookingNum}`, payload.message);
             }
             setLastUpdated(new Date());
           }
@@ -119,20 +122,20 @@ export function TripTracker({ booking, onClose }: TripTrackerProps) {
       };
 
       eventSource.onerror = () => {
-        // Fallback to polling every 5 seconds if SSE connection drops
+        // Fallback to polling every 2.5 seconds if SSE connection drops
       };
     } catch (e) {
       console.warn("SSE not available, falling back to polling", e);
     }
 
-    // 3. Fallback Interval Poller (every 5 seconds) to ensure status is 100% updated
-    const poller = setInterval(fetchLatestBooking, 5000);
+    // 3. Fallback Interval Poller (every 2.5 seconds) to ensure status is 100% updated in real time
+    const poller = setInterval(fetchLatestBooking, 2500);
 
     return () => {
       if (eventSource) eventSource.close();
       clearInterval(poller);
     };
-  }, [booking.number]);
+  }, [bookingNum]);
 
   const currentStepIdx = STATUS_STEPS.findIndex((s) => s.key === currentStatus);
   const activeIndex = currentStepIdx >= 0 ? currentStepIdx : 0;

@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, money, type Place, type QuoteOption, type Service } from "@/lib/api";
+import { api, API_URL, money, type Place, type QuoteOption, type Service } from "@/lib/api";
 import { Icon } from "@/components/Icon";
 import { PlaceInput } from "@/components/PlaceInput";
 import { TripTracker } from "@/components/TripTracker";
@@ -38,12 +38,30 @@ function BookingForm({ service }: { service: Service }) {
         const raw = localStorage.getItem("passenger_info");
         if (raw) {
           const info = JSON.parse(raw);
-          if (info.name && !passengerName) setPassengerName(info.name);
-          if (info.phone && !passengerPhone) setPassengerPhone(info.phone);
+          if (info.name) setPassengerName(info.name);
+          if (info.phone) setPassengerPhone(info.phone);
           if (info.email) setPassengerEmail(info.email);
         }
       } catch {
         // ignore
+      }
+
+      // If token exists, fetch fresh profile from /passengers/me
+      const token = localStorage.getItem("syd_passenger_token");
+      if (token) {
+        fetch(`${API_URL}/api/v1/passengers/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.passenger) {
+              setPassengerName(data.passenger.name || "");
+              setPassengerPhone(data.passenger.phone || "");
+              setPassengerEmail(data.passenger.email || "");
+              localStorage.setItem("passenger_info", JSON.stringify(data.passenger));
+            }
+          })
+          .catch(() => {});
       }
     }
   }, []);

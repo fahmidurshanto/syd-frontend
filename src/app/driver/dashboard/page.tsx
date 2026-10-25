@@ -9,6 +9,7 @@ import {
   driverAcceptTripApi,
   driverUpdateTripStatusApi,
   money,
+  API_URL,
   type BookingRecord,
 } from "@/lib/api";
 import { Icon } from "@/components/Icon";
@@ -26,8 +27,27 @@ export default function DriverDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [newJobAlert, setNewJobAlert] = useState<any | null>(null);
 
-  // Load Auth Token
+  // Play audible chime for incoming dispatch requests
+  const playDispatchChime = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    } catch {}
+  };
+
+  // Load Auth Token & Establish Live SSE Dispatch Connection
   useEffect(() => {
     const savedToken = localStorage.getItem("driver_token");
     if (!savedToken) {
@@ -48,10 +68,60 @@ export default function DriverDashboardPage() {
       });
 
     loadTrips(savedToken);
+
+    // 1. Real-Time SSE Dispatch Connection for online drivers
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(`${API_URL}/api/v1/drivers/events`);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload) {
+            // New booking placed
+            if (payload.type === "new_job") {
+              playDispatchChime();
+              setNewJobAlert(payload);
+              loadTrips(savedToken, true);
+
+              // Native desktop notification if permitted
+              if (typeof window !== "undefined" && "Notification" in window) {
+                if (Notification.permission === "granted") {
+                  new Notification(`🚖 New Ride Request #${payload.bookingNumber}`, {
+                    body: `${payload.pickup?.name} ➔ ${payload.destination?.name || "As Directed"} ($${(payload.fare?.total / 100).toFixed(2)})`,
+                    icon: "/favicon.ico",
+                  });
+                } else if (Notification.permission !== "denied") {
+                  Notification.requestPermission();
+                }
+              }
+            } else if (payload.type === "job_taken") {
+              // Someone took the job or status changed
+              loadTrips(savedToken, true);
+              setNewJobAlert((prev: any) => (prev?.bookingId === payload.bookingId ? null : prev));
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing driver event:", e);
+        }
+      };
+    } catch (e) {
+      console.warn("SSE connection error", e);
+    }
+
+    // 2. Background polling fallback every 3.5 seconds
+    const interval = setInterval(() => {
+      loadTrips(savedToken, true);
+    }, 3500);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      clearInterval(interval);
+    };
   }, []);
 
-  const loadTrips = async (authToken: string) => {
-    setLoading(true);
+  const loadTrips = async (authToken: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await driverGetTripsApi(authToken);
       setCurrentTrips(res.currentTrips || []);
@@ -60,7 +130,7 @@ export default function DriverDashboardPage() {
     } catch (err: any) {
       console.error("Failed to load driver trips", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -179,6 +249,51 @@ export default function DriverDashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* Real-time Dispatch Live Alert Banner */}
+        {newJobAlert && (
+          <div className="p-5 sm:p-6 rounded-3xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-950/80 via-[#0e171e] to-emerald-950/80 shadow-[0_0_30px_rgba(16,185,129,0.3)] animate-bounce-subtle flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-400/20 border border-emerald-400/40 text-emerald-400 grid place-items-center shrink-0">
+                <span className="text-xl">🚖</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono font-bold text-amber-300">#{newJobAlert.bookingNumber}</span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    New Incoming Request
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400">{money(newJobAlert.fare?.total)}</span>
+                </div>
+                <p className="text-sm font-semibold text-white mt-0.5">
+                  {newJobAlert.pickup?.name} ➔ {newJobAlert.destination?.name || "As Directed"}
+                </p>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Service: <span className="text-amber-300 uppercase font-medium">{newJobAlert.service}</span> • {newJobAlert.passengers} Pax
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full md:w-auto">
+              <button
+                onClick={() => {
+                  handleAcceptJob(newJobAlert.bookingId);
+                  setNewJobAlert(null);
+                }}
+                disabled={actionId === newJobAlert.bookingId}
+                className="flex-1 md:flex-initial h-11 px-6 rounded-xl font-bold text-xs text-zinc-950 bg-gradient-to-r from-emerald-400 via-emerald-300 to-amber-300 hover:brightness-110 shadow-lg transition active:scale-95 text-center whitespace-nowrap"
+              >
+                {actionId === newJobAlert.bookingId ? "Accepting..." : "Accept Now"}
+              </button>
+              <button
+                onClick={() => setNewJobAlert(null)}
+                className="h-11 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-zinc-400 hover:text-white transition"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {driver.status === "pending_verification" && (
           <div className="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">

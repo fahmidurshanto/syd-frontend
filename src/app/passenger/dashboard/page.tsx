@@ -22,7 +22,7 @@ export default function PassengerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     const token = getPassengerToken();
     if (!token) {
       router.push("/passenger/login");
@@ -36,19 +36,31 @@ export default function PassengerDashboardPage() {
       ]);
 
       setUser(profileRes.passenger);
+      if (typeof window !== "undefined" && profileRes.passenger) {
+        localStorage.setItem("passenger_info", JSON.stringify(profileRes.passenger));
+      }
       setActiveTrips(tripsRes.activeTrips || []);
       setPastTrips(tripsRes.pastTrips || []);
     } catch (err: any) {
-      setError(err.message || "Failed to load dashboard");
-      clearPassengerToken();
-      router.push("/passenger/login");
+      if (!silent) {
+        setError(err.message || "Failed to load dashboard");
+        clearPassengerToken();
+        router.push("/passenger/login");
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+
+    // Live background polling every 3 seconds to keep active trips and status mapping in real time
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = () => {
